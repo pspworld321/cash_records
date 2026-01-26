@@ -273,27 +273,19 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                             ))))),
             title: Text('Cash Records'),
             actions: [
-              MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: Tooltip(
-                      message: 'Filter',
-                      child: GestureDetector(
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
-                          child: Icon(
-                            Icons.filter_list,
-                            size: 25,
-                          ),
-                        ),
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext cntxt) {
-                              return AlertDialog(
-                                backgroundColor: Colors.white,
-                                title: Text("Filter Records"),
-                                content: Wrap(
-                                  children: [
+              IconButton(
+                icon: const Icon(Icons.filter_list),
+                iconSize: 25,
+                tooltip: 'Filter',
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext cntxt) {
+                      return AlertDialog(
+                        backgroundColor: Colors.white,
+                        title: Text("Filter Records"),
+                        content: Wrap(
+                          children: [
                                     ValueListenableBuilder(
                                         valueListenable: numberContent,
                                         builder: (BuildContext context, int value, Widget? child) {
@@ -435,7 +427,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                             },
                           );
                         },
-                      )))
+                      )
             ],
           ),
           floatingActionButton: Row(
