@@ -273,19 +273,10 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                             ))))),
             title: Text('Cash Records'),
             actions: [
-              MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: Tooltip(
-                      message: 'Filter',
-                      child: GestureDetector(
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
-                          child: Icon(
-                            Icons.filter_list,
-                            size: 25,
-                          ),
-                        ),
-                        onTap: () {
+              IconButton(
+                tooltip: 'Filter',
+                icon: Icon(Icons.filter_list, size: 25),
+                onPressed: () {
                           showDialog(
                             context: context,
                             builder: (BuildContext cntxt) {
@@ -435,7 +426,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                             },
                           );
                         },
-                      )))
+                      )
             ],
           ),
           floatingActionButton: Row(
