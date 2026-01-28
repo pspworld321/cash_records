@@ -256,37 +256,23 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       return Scaffold(
           backgroundColor: Global.backgroundColor,
           appBar: AppBar(
-            leading: MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: Tooltip(
-                    message: 'Menu',
-                    child: TextButton(
-                        onPressed: () {
-                          menuDialog(context);
-                        },
-                        child: Padding(
-                            padding: EdgeInsets.fromLTRB(15, 2, 0, 0),
-                            child: Icon(
-                              Icons.menu,
-                              size: 25,
-                              color: Colors.black,
-                            ))))),
+            leading: IconButton(
+              tooltip: 'Menu',
+              icon: Icon(Icons.menu, size: 25, color: Colors.black),
+              onPressed: () {
+                menuDialog(context);
+              },
+            ),
             title: Text('Cash Records'),
             actions: [
-              MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: Tooltip(
-                      message: 'Filter',
-                      child: GestureDetector(
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
-                          child: Icon(
-                            Icons.filter_list,
-                            size: 25,
-                          ),
-                        ),
-                        onTap: () {
-                          showDialog(
+              IconButton(
+                tooltip: 'Filter',
+                icon: Icon(
+                  Icons.filter_list,
+                  size: 25,
+                ),
+                onPressed: () {
+                  showDialog(
                             context: context,
                             builder: (BuildContext cntxt) {
                               return AlertDialog(
@@ -435,7 +421,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                             },
                           );
                         },
-                      )))
+                      )
             ],
           ),
           floatingActionButton: Row(
@@ -485,14 +471,12 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                       },
                       controller: searchController,
                       decoration: InputDecoration(
-                        suffix: GestureDetector(
-                          onTap: () {
+                        suffix: IconButton(
+                          tooltip: 'Clear search',
+                          icon: Icon(Icons.close, color: Colors.lime),
+                          onPressed: () {
                             searchController.clear();
                           },
-                          child: Icon(
-                            Icons.close,
-                            color: Colors.lime,
-                          ),
                         ),
                         fillColor: Colors.white,
                         labelText: 'Search',
@@ -1736,11 +1720,11 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                   ),
                                   Expanded(
                                     flex: 0,
-                                    child: MouseRegion(
-                                        cursor: SystemMouseCursors.click,
-                                        child: GestureDetector(
-                                            onTap: () {
-                                              showDialog(
+                                    child: IconButton(
+                                      tooltip: 'Delete',
+                                      icon: Icon(Icons.delete, color: Colors.lime, size: 30),
+                                      onPressed: () {
+                                        showDialog(
                                                 context: context,
                                                 builder: (BuildContext cntxt) {
                                                   return AlertDialog(
@@ -1783,12 +1767,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                                 },
                                               );
                                             },
-                                            child: Padding(
-                                                padding: EdgeInsets.all(2),
-                                                child: Tooltip(
-                                                  message: 'Delete',
-                                                  child: Icon(Icons.delete, color: Colors.lime, size: 30),
-                                                )))),
+                                    ),
                                   )
                                 ],
                               ))

@@ -88,26 +88,31 @@ class InForm extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Tooltip(
-                          message: 'Show Calender',
-                          child: Padding(
-                              padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
-                              child: GestureDetector(
-                                  child: Icon(
-                                    Icons.date_range_sharp,
-                                    size: 40,
-                                  ),
-                                  onTap: () async {
-                                    DateTime date = DateTime(1900);
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
+                        child: IconButton(
+                          tooltip: 'Show Calender',
+                          icon: Icon(
+                            Icons.date_range_sharp,
+                            size: 40,
+                          ),
+                          onPressed: () async {
+                            DateTime? pickedDate = await showDatePicker(
+                                context: formContext,
+                                initialDate: DateTime.now(),
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime(DateTime.now().year + 1));
 
-                                    date = (await showDatePicker(
-                                        context: formContext,
-                                        initialDate: DateTime.now(),
-                                        firstDate: DateTime(2000),
-                                        lastDate: DateTime(DateTime.now().year + 1)))!;
-
-                                    dateFormController.text = date.day.toString() + '/' + date.month.toString() + '/' + date.year.toString();
-                                  })))
+                            if (pickedDate != null) {
+                              dateFormController.text = pickedDate.day.toString() +
+                                  '/' +
+                                  pickedDate.month.toString() +
+                                  '/' +
+                                  pickedDate.year.toString();
+                            }
+                          },
+                        ),
+                      )
                     ],
                   ),
                   TypeAheadFormField(
@@ -184,19 +189,14 @@ class InForm extends StatelessWidget {
                                         children: [
                                           Text(attch['name']),
                                           Spacer(),
-                                          MouseRegion(
-                                              cursor: SystemMouseCursors.click,
-                                              child: Tooltip(
-                                                message: 'Remove',
-                                                child: GestureDetector(
-                                                    onTap: () {
-                                                      attachmentsMapsList.remove(attch);
-                                                      numberAttachList.value++;
-                                                    },
-                                                    child: Padding(
-                                                        padding: EdgeInsets.fromLTRB(5, 3, 5, 0),
-                                                        child: Icon(Icons.delete, size: 18, color: Colors.blue))),
-                                              ))
+                                          IconButton(
+                                            tooltip: 'Remove',
+                                            icon: Icon(Icons.delete, size: 18, color: Colors.blue),
+                                            onPressed: () {
+                                              attachmentsMapsList.remove(attch);
+                                              numberAttachList.value++;
+                                            },
+                                          )
                                         ],
                                       ),
                                     ),
