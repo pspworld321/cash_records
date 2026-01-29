@@ -51,6 +51,8 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -256,39 +258,23 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       return Scaffold(
           backgroundColor: Global.backgroundColor,
           appBar: AppBar(
-            leading: MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: Tooltip(
-                    message: 'Menu',
-                    child: TextButton(
-                        onPressed: () {
-                          menuDialog(context);
-                        },
-                        child: Padding(
-                            padding: EdgeInsets.fromLTRB(15, 2, 0, 0),
-                            child: Icon(
-                              Icons.menu,
-                              size: 25,
-                              color: Colors.black,
-                            ))))),
+            leading: IconButton(
+              icon: Icon(Icons.menu, size: 25, color: Colors.black),
+              tooltip: 'Menu',
+              onPressed: () {
+                menuDialog(context);
+              },
+            ),
             title: Text('Cash Records'),
             actions: [
-              MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: Tooltip(
-                      message: 'Filter',
-                      child: GestureDetector(
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
-                          child: Icon(
-                            Icons.filter_list,
-                            size: 25,
-                          ),
-                        ),
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext cntxt) {
+              IconButton(
+                icon: Icon(Icons.filter_list, size: 25),
+                tooltip: 'Filter',
+                padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext cntxt) {
                               return AlertDialog(
                                 backgroundColor: Colors.white,
                                 title: Text("Filter Records"),
@@ -435,7 +421,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                             },
                           );
                         },
-                      )))
+                      )
             ],
           ),
           floatingActionButton: Row(
