@@ -1,0 +1,3 @@
+## 2026-02-04 - [Accessibility] Refactoring Custom Buttons to Standards
+**Learning:** The codebase heavily utilized `GestureDetector` wrapped in `MouseRegion` and `Tooltip` to simulate buttons. This pattern breaks accessibility (screen readers don't perceive it as a button, keyboard navigation fails) and lacks standard visual feedback (Material ink splash).
+**Action:** When identifying custom interactive elements, always check if a standard widget (like `IconButton`, `TextButton`, or `ElevatedButton`) can replace them. Standard widgets provide built-in accessibility semantics, focus states, and platform-appropriate styling for free.
