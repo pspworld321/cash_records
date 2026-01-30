@@ -273,22 +273,13 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                             ))))),
             title: Text('Cash Records'),
             actions: [
-              MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: Tooltip(
-                      message: 'Filter',
-                      child: GestureDetector(
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
-                          child: Icon(
-                            Icons.filter_list,
-                            size: 25,
-                          ),
-                        ),
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext cntxt) {
+              IconButton(
+                icon: Icon(Icons.filter_list, size: 25),
+                tooltip: 'Filter',
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext cntxt) {
                               return AlertDialog(
                                 backgroundColor: Colors.white,
                                 title: Text("Filter Records"),
@@ -485,14 +476,12 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                       },
                       controller: searchController,
                       decoration: InputDecoration(
-                        suffix: GestureDetector(
-                          onTap: () {
+                        suffixIcon: IconButton(
+                          icon: Icon(Icons.close, color: Colors.lime),
+                          onPressed: () {
                             searchController.clear();
                           },
-                          child: Icon(
-                            Icons.close,
-                            color: Colors.lime,
-                          ),
+                          tooltip: 'Clear search',
                         ),
                         fillColor: Colors.white,
                         labelText: 'Search',
