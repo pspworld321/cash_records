@@ -485,11 +485,13 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                       },
                       controller: searchController,
                       decoration: InputDecoration(
-                        suffix: GestureDetector(
-                          onTap: () {
+                        suffixIcon: IconButton(
+                          tooltip: 'Clear search',
+                          onPressed: () {
                             searchController.clear();
+                            numberContent.value++;
                           },
-                          child: Icon(
+                          icon: Icon(
                             Icons.close,
                             color: Colors.lime,
                           ),
