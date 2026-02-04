@@ -143,7 +143,7 @@ class DataState extends State<Data> {
                                                   height: MediaQuery.of(context).size.height - 240,
                                                   child: Scrollbar(
                                                     thickness: 10,
-                                                    isAlwaysShown: true,
+                                                    thumbVisibility: true,
                                                     controller: settingsDataListScrollController,
                                                     child: ListView(
                                                       // shrinkWrap: true,

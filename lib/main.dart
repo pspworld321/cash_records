@@ -44,9 +44,9 @@ void main() async {
   if (Global.settingsBox.get('ratePopCounter') == null) {
     await Global.settingsBox.put('ratePopCounter', 0);
   }
-  if (defaultTargetPlatform == TargetPlatform.android) {
-    InAppPurchaseAndroidPlatformAddition.enablePendingPurchases();
-  }
+  // if (defaultTargetPlatform == TargetPlatform.android) {
+  //   InAppPurchaseAndroidPlatformAddition.enablePendingPurchases();
+  // }
   runApp(MyApp());
 }
 
@@ -216,7 +216,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    _subscription.cancel();
+    // _subscription.cancel();
     WidgetsBinding.instance!.removeObserver(this);
     super.dispose();
   }
@@ -485,14 +485,13 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                       },
                       controller: searchController,
                       decoration: InputDecoration(
-                        suffix: GestureDetector(
-                          onTap: () {
+                        suffixIcon: IconButton(
+                          icon: Icon(Icons.close, color: Colors.lime),
+                          tooltip: 'Clear search',
+                          onPressed: () {
                             searchController.clear();
+                            numberContent.value++;
                           },
-                          child: Icon(
-                            Icons.close,
-                            color: Colors.lime,
-                          ),
                         ),
                         fillColor: Colors.white,
                         labelText: 'Search',
