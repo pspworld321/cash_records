@@ -273,22 +273,18 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                             ))))),
             title: Text('Cash Records'),
             actions: [
-              MouseRegion(
-                  cursor: SystemMouseCursors.click,
-                  child: Tooltip(
-                      message: 'Filter',
-                      child: GestureDetector(
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
-                          child: Icon(
-                            Icons.filter_list,
-                            size: 25,
-                          ),
-                        ),
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext cntxt) {
+              Padding(
+                padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
+                child: IconButton(
+                  tooltip: 'Filter',
+                  icon: Icon(
+                    Icons.filter_list,
+                    size: 25,
+                  ),
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext cntxt) {
                               return AlertDialog(
                                 backgroundColor: Colors.white,
                                 title: Text("Filter Records"),
@@ -415,27 +411,28 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                             }),
                                       ],
                                     ),
-                                  ],
-                                ),
-                                actions: [
-                                  TextButton(
-                                    child: Text("Reset",style: TextStyle(color: Global.iconColor)),
-                                    onPressed: () {
-                                      resetFilter();
-                                    },
-                                  ),
-                                  TextButton(
-                                    child: Text("OK",style: TextStyle(color: Global.iconColor)),
-                                    onPressed: () {
-                                      Navigator.of(cntxt).pop();
-                                    },
-                                  ),
-                                ],
-                              );
-                            },
-                          );
-                        },
-                      )))
+                            ],
+                          ),
+                          actions: [
+                            TextButton(
+                              child: Text("Reset",style: TextStyle(color: Global.iconColor)),
+                              onPressed: () {
+                                resetFilter();
+                              },
+                            ),
+                            TextButton(
+                              child: Text("OK",style: TextStyle(color: Global.iconColor)),
+                              onPressed: () {
+                                Navigator.of(cntxt).pop();
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  },
+                ),
+              )
             ],
           ),
           floatingActionButton: Row(
@@ -485,11 +482,12 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                       },
                       controller: searchController,
                       decoration: InputDecoration(
-                        suffix: GestureDetector(
-                          onTap: () {
+                        suffix: IconButton(
+                          onPressed: () {
                             searchController.clear();
+                            numberContent.value++;
                           },
-                          child: Icon(
+                          icon: Icon(
                             Icons.close,
                             color: Colors.lime,
                           ),
