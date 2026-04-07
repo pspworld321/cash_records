@@ -61,17 +61,18 @@ class Attachments {
 
   static AttachWidget(formContext, attachmentsMapsList, numberAttachList) {
     return Padding(
-        padding: EdgeInsets.fromLTRB(0, 10, 0, 0),
-        child: MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: Tooltip(
-              message: 'Attach files',
-              child: IconButton(
-                  onPressed: () async {
-                    Attachments.save(formContext, attachmentsMapsList, numberAttachList);
-                  },
-                  icon: Padding(padding: EdgeInsets.fromLTRB(5, 0, 5, 0), child: Icon(Icons.attach_file, size: 25))),
-            )));
+      padding: EdgeInsets.fromLTRB(0, 10, 0, 0),
+      child: IconButton(
+        tooltip: 'Attach files',
+        onPressed: () async {
+          Attachments.save(formContext, attachmentsMapsList, numberAttachList);
+        },
+        icon: Padding(
+          padding: EdgeInsets.fromLTRB(5, 0, 5, 0),
+          child: Icon(Icons.attach_file, size: 25),
+        ),
+      ),
+    );
   }
 
   static void nameSubmit

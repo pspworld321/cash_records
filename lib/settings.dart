@@ -164,50 +164,43 @@ class DataState extends State<Data> {
                                                                       ),
                                                                     ),
                                                                     Spacer(),
-                                                                    MouseRegion(
-                                                                        cursor: SystemMouseCursors.click,
-                                                                        child: GestureDetector(
-                                                                            onTap: () {
-                                                                              showDialog(
-                                                                                context: context,
-                                                                                builder: (BuildContext cntxt) {
-                                                                                  return AlertDialog(
-                                                                                    title: Text("Alert"),
-                                                                                    content: Text(
-                                                                                        "Sure to delete this Entry"),
-                                                                                    actions: [
-                                                                                      TextButton(
-                                                                                        child: Text("No"),
-                                                                                        onPressed: () {
-                                                                                          Navigator.of(cntxt).pop();
-                                                                                        },
-                                                                                      ),
-                                                                                      TextButton(
-                                                                                        child: Text("Yes"),
-                                                                                        onPressed: () async {
-                                                                                          Global.deleteSuggData(
-                                                                                              selectedField,
-                                                                                              list![i],
-                                                                                              i);
+                                                                    Padding(
+                                                                      padding: EdgeInsets.fromLTRB(10, 0, 5, 0),
+                                                                      child: IconButton(
+                                                                        tooltip: 'Delete',
+                                                                        icon: Icon(Icons.delete, color: Colors.blue, size: 30),
+                                                                        onPressed: () {
+                                                                          showDialog(
+                                                                            context: context,
+                                                                            builder: (BuildContext cntxt) {
+                                                                              return AlertDialog(
+                                                                                title: Text("Alert"),
+                                                                                content: Text("Sure to delete this Entry"),
+                                                                                actions: [
+                                                                                  TextButton(
+                                                                                    child: Text("No"),
+                                                                                    onPressed: () {
+                                                                                      Navigator.of(cntxt).pop();
+                                                                                    },
+                                                                                  ),
+                                                                                  TextButton(
+                                                                                    child: Text("Yes"),
+                                                                                    onPressed: () async {
+                                                                                      Global.deleteSuggData(
+                                                                                          selectedField, list![i], i);
 
-                                                                                          numberSettingsList.value++;
+                                                                                      numberSettingsList.value++;
 
-                                                                                          Navigator.of(cntxt).pop();
-                                                                                        },
-                                                                                      ),
-                                                                                    ],
-                                                                                  );
-                                                                                },
+                                                                                      Navigator.of(cntxt).pop();
+                                                                                    },
+                                                                                  ),
+                                                                                ],
                                                                               );
                                                                             },
-                                                                            child: Padding(
-                                                                                padding:
-                                                                                    EdgeInsets.fromLTRB(10, 0, 5, 0),
-                                                                                child: Tooltip(
-                                                                                  message: 'Delete',
-                                                                                  child: Icon(Icons.delete,
-                                                                                      color: Colors.blue, size: 30),
-                                                                                )))),
+                                                                          );
+                                                                        },
+                                                                      ),
+                                                                    ),
                                                                   ],
                                                                 )),
                                                           )
