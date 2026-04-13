@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'dart:io';
-import 'package:flutter_web_browser/flutter_web_browser.dart';
 
 import 'package:flutter_styled_toast/flutter_styled_toast.dart';
 import 'package:archive/archive_io.dart';
@@ -8,96 +6,63 @@ import 'package:flutter/material.dart';
 import 'package:googleapis/drive/v3.dart' as ga;
 import 'package:googleapis_auth/auth_io.dart';
 import 'package:hive/hive.dart';
-import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:googleapis/people/v1.dart' as ppl;
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 
 import 'global.dart';
 import 'main.dart';
 
 class DriveSync {
-  var _clientId = "543807404983-d6c8gh2qpfk10tlf8ucnrl2md8ue7nci.apps.googleusercontent.com";
-  var _scopes = ['https://www.googleapis.com/auth/drive.appdata', 'https://www.googleapis.com/auth/userinfo.email'];
-  var  authDrive;
+  var authDrive;
 
-  // final InAppBrowser browser = new InAppBrowser();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: [
+      'https://www.googleapis.com/auth/drive.appdata',
+      'https://www.googleapis.com/auth/userinfo.email',
+    ],
+  );
 
-  //Get Authenticated Http Client
   authenticateDrive() async {
-    //Get Credentials
-    var credentials = await getCredentials();
-    if (credentials == null) {
-      //Needs user authentication
-      var authClient = await clientViaUserConsent(ClientId(_clientId, ''), _scopes, (url) async {
-        //Open Url in Browser
-        if (Platform.isAndroid) {
-          // var options = InAppBrowserClassOptions(
-          //     crossPlatform: InAppBrowserOptions(hideUrlBar: false),
-          //     inAppWebViewGroupOptions: InAppWebViewGroupOptions(crossPlatform: InAppWebViewOptions(javaScriptEnabled: true)));
-          // browser.openUrlRequest(urlRequest: URLRequest(url: Uri.parse(url)), options: options);
-
-          FlutterWebBrowser.openWebPage(
-              url: url,
-              customTabsOptions: CustomTabsOptions(
-                toolbarColor: Colors.lime,
-              ));
-        } else {
-          launch(url);
+    try {
+      GoogleSignInAccount? account = await _googleSignIn.signIn();
+      if (account != null) {
+        var authClient = await _googleSignIn.authenticatedClient();
+        if (authClient != null) {
+          authDrive = ga.DriveApi(authClient);
+          MyHomePageState.email = account.email;
+          await Global.settingsBox.put('userEmail', account.email);
+          checkForBackup();
+          Global.loggedIn = true;
+          MyHomePageState.backupNotifier.value++;
         }
-      });
-
-      try {
-        var url = Uri.parse('https://www.googleapis.com/oauth2/v1/userinfo?access_token=${authClient.credentials.accessToken.data}');
-        var response = await http.get(url);
-        Map responseMap = jsonDecode(response.body);
-        MyHomePageState.email = responseMap['email'];
-        await Global.settingsBox.put('userEmail', responseMap['email']);
-        print(responseMap);
-      } catch (e, s) {
-        print(e);
-        print(s);
       }
-
-      authDrive = ga.DriveApi(authClient);
-      await saveCredentials(authClient.credentials.accessToken, authClient.credentials.refreshToken.toString());
-      checkForBackup();
-      Global.loggedIn = true;
-      MyHomePageState.backupNotifier.value++;
-    } else {
-      //Already authenticated
-      await refreshTheToken();
-      DateTime? dt = DateTime.tryParse(credentials["expiry"]);
-      var authClient = authenticatedClient(
-          http.Client(),
-          AccessCredentials(AccessToken(credentials["type"], credentials['access_token'], dt!),
-              credentials["refreshToken"], _scopes));
-
-      authDrive = ga.DriveApi(authClient);
+    } catch (error) {
+      print(error);
     }
   }
 
   refreshTheToken() async {
-    var credentials = await Global.settingsBox.get('credentials');
-    String refreshToken = credentials['refreshToken'];
-    var url = Uri.parse('https://accounts.google.com/o/oauth2/token?client_id=$_clientId&refresh_token=$refreshToken&grant_type=refresh_token');
-    var response = await http.post(url);
-    Map responseMap = jsonDecode(response.body);
-    //
-    if (responseMap['access_token'] != null) {
-      credentials['time_saved_at'] = DateTime.now().millisecondsSinceEpoch;
-      credentials['access_token'] = responseMap['access_token'];
-      await Global.settingsBox.put('credentials', credentials);
-    } else {
-      //print('error in refreshing token');
-    }
-    return responseMap;
+    // google_sign_in handles token refresh automatically
   }
 
   authenticate() async {
-    Map credentials = (await getCredentials()) ?? {};
-    if (credentials == {} || authDrive == null || (DateTime.now().millisecondsSinceEpoch - credentials['time_saved_at']) > 3500000) {
+    bool isSigned = await _googleSignIn.isSignedIn();
+    if (isSigned) {
+      // Must call signInSilently to restore session state fully
+      GoogleSignInAccount? account = await _googleSignIn.signInSilently();
+      if (account != null) {
+        var authClient = await _googleSignIn.authenticatedClient();
+        if (authClient != null) {
+          authDrive = ga.DriveApi(authClient);
+          Global.loggedIn = true;
+        } else {
+          await authenticateDrive();
+        }
+      } else {
+        await authenticateDrive();
+      }
+    } else {
       await authenticateDrive();
     }
   }
@@ -107,17 +72,22 @@ class DriveSync {
     MyHomePageState.backupNotifier.value++;
     print('upload backup');
     await authenticate();
+    if (authDrive == null) {
+        MyHomePageState.uploadingBackup = false;
+        MyHomePageState.backupNotifier.value++;
+        return;
+    }
     var encoder = ZipFileEncoder();
     var zipPath = await Global.getDataDirectoryPath() + '/cashRecordsBackup.zip';
     encoder.create(zipPath);
     Directory dir = Directory(await Global.getDataDirectoryPath() + '/');
     List files = await dir.list().toList();
-    files.forEach((file) {
+    for (var file in files) {
       if (file.path.contains('.hive') && !file.path.contains('settings.hive')) {
         print(file.path);
-        encoder.addFile(file);
+        encoder.addFile(file as File);
       }
-    });
+    }
     encoder.close();
     try {
       var query = '''mimeType = "application/zip"
@@ -130,10 +100,10 @@ class DriveSync {
       fileToUpload.mimeType = 'application/zip';
 
       File zipFile = File(zipPath);
-      if (listMap.files != null && listMap.files!.length > 0) {
+      if (listMap.files != null && listMap.files!.isNotEmpty) {
         responseFile = await authDrive.files.update(fileToUpload, listMap.files![listMap.files!.length - 1].id.toString(),
             addParents: 'appDataFolder', uploadMedia: ga.Media(zipFile.openRead(), await File(zipPath).length()), $fields: 'modifiedTime,id');
-      } else if (listMap.files != null && listMap.files!.length == 0) {
+      } else if (listMap.files != null && listMap.files!.isEmpty) {
         fileToUpload.parents = ['appDataFolder'];
         responseFile = await authDrive.files
             .create(fileToUpload, uploadMedia: ga.Media(zipFile.openRead(), await File(zipPath).length()), $fields: 'modifiedTime,id');
@@ -156,6 +126,11 @@ class DriveSync {
   restoreBackup() async {
     print('restore : ');
     await authenticate();
+    if (authDrive == null) {
+      Navigator.of(MyHomePageState.cntxtOfRestoreProgressDialog).pop();
+      showToast('Authentication failed',context: MyHomePageState.ctx);
+      return;
+    }
     //check for backup to restore
     try {
       var query = '''mimeType = "application/zip"
@@ -163,7 +138,7 @@ class DriveSync {
       ga.FileList listMap =
           await authDrive.files.list(spaces: 'appDataFolder', q: query, orderBy: 'modifiedTime', $fields: 'files(id,name,modifiedTime)');
       print(listMap.files);
-      if (listMap.files != null && listMap.files!.length > 0) {
+      if (listMap.files != null && listMap.files!.isNotEmpty) {
         ga.Media? file = (await authDrive.files.get(listMap.files![listMap.files!.length - 1].id.toString(), downloadOptions: ga.DownloadOptions.fullMedia)) as ga.Media?;
         List<int> dataStore = [];
         file!.stream.listen((data) {
@@ -210,6 +185,11 @@ class DriveSync {
     Global.checkingBackup = true;
     MyHomePageState.backupNotifier.value++;
     print('checkForBackup : ');
+    if (authDrive == null) {
+      Global.checkingBackup = false;
+      MyHomePageState.backupNotifier.value++;
+      return;
+    }
     //check for backup and get date
     try {
       var query = '''mimeType = "application/zip"
@@ -217,7 +197,7 @@ class DriveSync {
       ga.FileList listMap =
           await authDrive.files.list(spaces: 'appDataFolder', q: query, orderBy: 'modifiedTime', $fields: 'files(id,name,modifiedTime)');
       print(listMap.files);
-      if (listMap.files != null && listMap.files!.length > 0) {
+      if (listMap.files != null && listMap.files!.isNotEmpty) {
         final DateFormat formatter = DateFormat('dd-MM-yyyy HH:mm');
         String lastBackup = formatter.format(listMap.files![listMap.files!.length - 1].modifiedTime!.toLocal());
         print('backup found');
@@ -238,26 +218,18 @@ class DriveSync {
   }
 
   saveCredentials(AccessToken token, String refreshToken) async {
-    await Global.settingsBox.put('credentials', {
-      "type": token.type,
-      'access_token': token.data,
-      "expiry": token.expiry.toString(),
-      "refreshToken": refreshToken,
-      'time_saved_at': DateTime.now().millisecondsSinceEpoch
-    });
-    //browser.close();
+    // google_sign_in handles this automatically
   }
 
   getCredentials() async {
-    var result = await Global.settingsBox.get('credentials');
-    if (result == null || result.length == 0 || result['refreshToken'] == '' || result['refreshToken'] == null) {
-      return null;
+    if (await _googleSignIn.isSignedIn()) {
+      return {'signed_in': true};
     }
-    return result;
+    return null;
   }
 
   clearCredentials() async {
-    await Global.settingsBox.delete('credentials');
+    await _googleSignIn.disconnect();
     await Future.delayed(Duration(milliseconds: 100));
     Global.loggedIn = false;
     MyHomePageState.backupNotifier.value++;
