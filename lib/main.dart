@@ -34,10 +34,7 @@ void main() async {
   Global.brandInfoBox = await Hive.openBox('brandInfoBox');
   // Global.settingsBox.put('dataConverted', null);
   var driveSync = DriveSync();
-  var cred = await driveSync.getCredentials();
-  if (cred != null) {
-    Global.loggedIn = true;
-  }
+  await driveSync.restoreSession();
   if (Global.settingsBox.get('backupInterval') == null) {
     await Global.settingsBox.put('backupInterval', 3);
   }
@@ -806,10 +803,6 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             child: ValueListenableBuilder(
               valueListenable: backupNotifier,
               builder: (BuildContext context, value, Widget? child) {
-                if (Global.loggedIn) {
-                  if (Global.settingsBox.get('userEmail') != null) {
-                    email = Global.settingsBox.get('userEmail');
-                  }
 
                   var lastBackup = '';
                   if (Global.settingsBox.get('backupDate') != null) {
