@@ -7,6 +7,8 @@ import 'package:archive/archive_io.dart';
 import 'package:flutter/material.dart';
 import 'package:googleapis/drive/v3.dart' as ga;
 import 'package:googleapis_auth/auth_io.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
@@ -22,82 +24,51 @@ class DriveSync {
   var _scopes = ['https://www.googleapis.com/auth/drive.appdata', 'https://www.googleapis.com/auth/userinfo.email'];
   var  authDrive;
 
-  // final InAppBrowser browser = new InAppBrowser();
+  Future<void> restoreSession() async {
+    final GoogleSignIn googleSignIn = GoogleSignIn(scopes: _scopes);
+    try {
+      final GoogleSignInAccount? account = await googleSignIn.signInSilently();
+      if (account != null) {
+        MyHomePageState.email = account.email;
+        await Global.settingsBox.put('userEmail', account.email);
+
+        var authClient = await googleSignIn.authenticatedClient();
+        if (authClient != null) {
+           authDrive = ga.DriveApi(authClient);
+           checkForBackup();
+           Global.loggedIn = true;
+           MyHomePageState.backupNotifier.value++;
+        }
+      }
+    } catch (error) {
+      print('Error restoring session: $error');
+    }
+  }
 
   //Get Authenticated Http Client
   authenticateDrive() async {
-    //Get Credentials
-    var credentials = await getCredentials();
-    if (credentials == null) {
-      //Needs user authentication
-      var authClient = await clientViaUserConsent(ClientId(_clientId, ''), _scopes, (url) async {
-        //Open Url in Browser
-        if (Platform.isAndroid) {
-          // var options = InAppBrowserClassOptions(
-          //     crossPlatform: InAppBrowserOptions(hideUrlBar: false),
-          //     inAppWebViewGroupOptions: InAppWebViewGroupOptions(crossPlatform: InAppWebViewOptions(javaScriptEnabled: true)));
-          // browser.openUrlRequest(urlRequest: URLRequest(url: Uri.parse(url)), options: options);
+    final GoogleSignIn googleSignIn = GoogleSignIn(scopes: _scopes);
+    try {
+      final GoogleSignInAccount? account = await googleSignIn.signIn();
+      if (account != null) {
+        MyHomePageState.email = account.email;
+        await Global.settingsBox.put('userEmail', account.email);
 
-          FlutterWebBrowser.openWebPage(
-              url: url,
-              customTabsOptions: CustomTabsOptions(
-                toolbarColor: Colors.lime,
-              ));
-        } else {
-          launch(url);
+        var authClient = await googleSignIn.authenticatedClient();
+        if (authClient != null) {
+          authDrive = ga.DriveApi(authClient);
+          checkForBackup();
+          Global.loggedIn = true;
+          MyHomePageState.backupNotifier.value++;
         }
-      });
-
-      try {
-        var url = Uri.parse('https://www.googleapis.com/oauth2/v1/userinfo?access_token=${authClient.credentials.accessToken.data}');
-        var response = await http.get(url);
-        Map responseMap = jsonDecode(response.body);
-        MyHomePageState.email = responseMap['email'];
-        await Global.settingsBox.put('userEmail', responseMap['email']);
-        print(responseMap);
-      } catch (e, s) {
-        print(e);
-        print(s);
       }
-
-      authDrive = ga.DriveApi(authClient);
-      await saveCredentials(authClient.credentials.accessToken, authClient.credentials.refreshToken.toString());
-      checkForBackup();
-      Global.loggedIn = true;
-      MyHomePageState.backupNotifier.value++;
-    } else {
-      //Already authenticated
-      await refreshTheToken();
-      DateTime? dt = DateTime.tryParse(credentials["expiry"]);
-      var authClient = authenticatedClient(
-          http.Client(),
-          AccessCredentials(AccessToken(credentials["type"], credentials['access_token'], dt!),
-              credentials["refreshToken"], _scopes));
-
-      authDrive = ga.DriveApi(authClient);
+    } catch (error) {
+      print('Error authenticating: $error');
     }
-  }
-
-  refreshTheToken() async {
-    var credentials = await Global.settingsBox.get('credentials');
-    String refreshToken = credentials['refreshToken'];
-    var url = Uri.parse('https://accounts.google.com/o/oauth2/token?client_id=$_clientId&refresh_token=$refreshToken&grant_type=refresh_token');
-    var response = await http.post(url);
-    Map responseMap = jsonDecode(response.body);
-    //
-    if (responseMap['access_token'] != null) {
-      credentials['time_saved_at'] = DateTime.now().millisecondsSinceEpoch;
-      credentials['access_token'] = responseMap['access_token'];
-      await Global.settingsBox.put('credentials', credentials);
-    } else {
-      //print('error in refreshing token');
-    }
-    return responseMap;
   }
 
   authenticate() async {
-    Map credentials = (await getCredentials()) ?? {};
-    if (credentials == {} || authDrive == null || (DateTime.now().millisecondsSinceEpoch - credentials['time_saved_at']) > 3500000) {
+    if (authDrive == null) {
       await authenticateDrive();
     }
   }
@@ -237,28 +208,11 @@ class DriveSync {
     MyHomePageState.backupNotifier.value++;
   }
 
-  saveCredentials(AccessToken token, String refreshToken) async {
-    await Global.settingsBox.put('credentials', {
-      "type": token.type,
-      'access_token': token.data,
-      "expiry": token.expiry.toString(),
-      "refreshToken": refreshToken,
-      'time_saved_at': DateTime.now().millisecondsSinceEpoch
-    });
-    //browser.close();
-  }
-
-  getCredentials() async {
-    var result = await Global.settingsBox.get('credentials');
-    if (result == null || result.length == 0 || result['refreshToken'] == '' || result['refreshToken'] == null) {
-      return null;
-    }
-    return result;
-  }
-
   clearCredentials() async {
-    await Global.settingsBox.delete('credentials');
+    final GoogleSignIn googleSignIn = GoogleSignIn(scopes: _scopes);
+    await googleSignIn.disconnect();
     await Future.delayed(Duration(milliseconds: 100));
+    authDrive = null;
     Global.loggedIn = false;
     MyHomePageState.backupNotifier.value++;
   }
