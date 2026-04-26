@@ -6,12 +6,12 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 1.0.1+2
 
 environment:
-  sdk: ">=2.12.0 <3.0.0"
+  sdk: ">=2.12.0 <4.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  csv: ^4.1.0
+  csv: ^5.0.0
   printing: ^5.0.4
   pdf: ^3.1.0
   intl: ^0.17.0
@@ -27,15 +27,14 @@ dependencies:
   in_app_review: ^2.0.2
   url_launcher: ^6.0.9
   googleapis: ^2.0.0
-  google_sign_in: ^5.0.1
+  google_sign_in: ^7.2.0
   googleapis_auth: ^1.1.0
   archive: ^3.1.2
   flutter_styled_toast: ^2.0.0
-  flutter_web_browser: ^0.14.0
   queue: ^3.1.0
-  flutter_inappwebview: ^5.3.2
   move_to_background: ^1.0.2
   in_app_purchase: ^1.0.9
+  extension_google_sign_in_as_googleapis_auth: ^3.0.0
   #esys_flutter_share: ^1.0.2
 
 dev_dependencies:
