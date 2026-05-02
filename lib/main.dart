@@ -34,7 +34,7 @@ void main() async {
   Global.brandInfoBox = await Hive.openBox('brandInfoBox');
   // Global.settingsBox.put('dataConverted', null);
   var driveSync = DriveSync();
-  var cred = await driveSync.getCredentials();
+  var cred = await driveSync.restoreSession();
   if (cred != null) {
     Global.loggedIn = true;
   }
@@ -232,9 +232,17 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   resetFilter() {
     DateTime toDate = DateTime.now();
-    String toString = toDate.day.toString() + "/" + toDate.month.toString() + "/" + toDate.year.toString();
+    String toString = toDate.day.toString() +
+        "/" +
+        toDate.month.toString() +
+        "/" +
+        toDate.year.toString();
     DateTime fromDate = toDate.subtract(Duration(days: 30));
-    String fromString = fromDate.day.toString() + "/" + fromDate.month.toString() + "/" + fromDate.year.toString();
+    String fromString = fromDate.day.toString() +
+        "/" +
+        fromDate.month.toString() +
+        "/" +
+        fromDate.year.toString();
     dateFromController.text = fromString;
     dateToController.text = toString;
     _selectedFieldContent = Global.fieldsContent[0];
@@ -285,143 +293,155 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                     showDialog(
                       context: context,
                       builder: (BuildContext cntxt) {
-                              return AlertDialog(
-                                backgroundColor: Colors.white,
-                                title: Text("Filter Records"),
-                                content: Wrap(
-                                  children: [
-                                    ValueListenableBuilder(
-                                        valueListenable: numberContent,
-                                        builder: (BuildContext context, int value, Widget? child) {
-                                          return Container(
-                                            padding: EdgeInsets.fromLTRB(0, 0, 10, 0),
-                                            child: DropdownButton(
-                                              style: TextStyle(
-                                                  fontSize: 15,
-                                                  color: Color.fromARGB(1000, 51, 51, 51),
-                                                  fontWeight: FontWeight.w600),
-                                              value: _selectedFieldContent,
-                                              underline: Container(),
-                                              onChanged: (newValue) {
-                                                _selectedFieldContent = newValue.toString();
-                                                numberContent.value++;
-                                              },
-                                              items: Global.fieldsContent.map((location) {
-                                                return DropdownMenuItem(
-                                                  child: new Text(
-                                                    location.toString().toUpperCase(),
-                                                  ),
-                                                  value: location,
-                                                );
-                                              }).toList(),
+                        return AlertDialog(
+                          backgroundColor: Colors.white,
+                          title: Text("Filter Records"),
+                          content: Wrap(
+                            children: [
+                              ValueListenableBuilder(
+                                  valueListenable: numberContent,
+                                  builder: (BuildContext context, int value,
+                                      Widget? child) {
+                                    return Container(
+                                      padding: EdgeInsets.fromLTRB(0, 0, 10, 0),
+                                      child: DropdownButton(
+                                        style: TextStyle(
+                                            fontSize: 15,
+                                            color: Color.fromARGB(
+                                                1000, 51, 51, 51),
+                                            fontWeight: FontWeight.w600),
+                                        value: _selectedFieldContent,
+                                        underline: Container(),
+                                        onChanged: (newValue) {
+                                          _selectedFieldContent =
+                                              newValue.toString();
+                                          numberContent.value++;
+                                        },
+                                        items: Global.fieldsContent
+                                            .map((location) {
+                                          return DropdownMenuItem(
+                                            child: new Text(
+                                              location.toString().toUpperCase(),
                                             ),
+                                            value: location,
                                           );
-                                        }),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Container(
-                                              //  width: 50,
-                                              child: TextFormField(
-                                            validator: (value) {
-                                              if (value!.isEmpty) {
-                                                return 'Please enter Date';
-                                              }
-                                              if (!RegExp(r'\d{1,2}/\d{1,2}/\d{4}').hasMatch(value)) {
-                                                return 'Please enter correct Date';
-                                              }
-                                              return null;
-                                            },
-                                            controller: dateFromController,
-                                            decoration: InputDecoration(
-                                              fillColor: Colors.white,
-                                              labelText: 'From',
-                                              hintText: "dd/mm/yyyy",
-                                            ),
-                                          )),
-                                        ),
-                                        IconButton(
-                                            padding: EdgeInsets.fromLTRB(0, 15, 0, 0),
-                                            icon: Icon(
-                                              Icons.date_range_sharp,
-                                              size: 40,
-                                            ),
-                                            onPressed: () async {
-                                              DateTime? date = DateTime(1900);
-                                              date = await showDatePicker(
-                                                  context: context,
-                                                  initialDate: DateTime.now(),
-                                                  firstDate: DateTime(2000),
-                                                  lastDate: DateTime(DateTime.now().year + 1));
+                                        }).toList(),
+                                      ),
+                                    );
+                                  }),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                        //  width: 50,
+                                        child: TextFormField(
+                                      validator: (value) {
+                                        if (value!.isEmpty) {
+                                          return 'Please enter Date';
+                                        }
+                                        if (!RegExp(r'\d{1,2}/\d{1,2}/\d{4}')
+                                            .hasMatch(value)) {
+                                          return 'Please enter correct Date';
+                                        }
+                                        return null;
+                                      },
+                                      controller: dateFromController,
+                                      decoration: InputDecoration(
+                                        fillColor: Colors.white,
+                                        labelText: 'From',
+                                        hintText: "dd/mm/yyyy",
+                                      ),
+                                    )),
+                                  ),
+                                  IconButton(
+                                      padding: EdgeInsets.fromLTRB(0, 15, 0, 0),
+                                      icon: Icon(
+                                        Icons.date_range_sharp,
+                                        size: 40,
+                                      ),
+                                      onPressed: () async {
+                                        DateTime? date = DateTime(1900);
+                                        date = await showDatePicker(
+                                            context: context,
+                                            initialDate: DateTime.now(),
+                                            firstDate: DateTime(2000),
+                                            lastDate: DateTime(
+                                                DateTime.now().year + 1));
 
-                                              if (date != null) {
-                                                dateFromController.text = date.day.toString() +
-                                                    '/' +
-                                                    date.month.toString() +
-                                                    '/' +
-                                                    date.year.toString();
-                                                numberContent.value++;
-                                              }
-                                            }),
-                                      ],
-                                    ),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Container(
-                                              // width: 50,
-                                              child: TextFormField(
-                                            validator: (value) {
-                                              if (value!.isEmpty) {
-                                                return 'Please enter Date';
-                                              }
-                                              if (!RegExp(r'\d{1,2}/\d{1,2}/\d{4}').hasMatch(value)) {
-                                                return 'Please enter correct Date';
-                                              }
-                                              return null;
-                                            },
-                                            controller: dateToController,
-                                            decoration: InputDecoration(
-                                              fillColor: Colors.white,
-                                              labelText: 'To',
-                                              hintText: "dd/mm/yyyy",
-                                            ),
-                                          )),
-                                        ),
-                                        IconButton(
-                                            padding: EdgeInsets.fromLTRB(0, 15, 0, 0),
-                                            icon: Icon(
-                                              Icons.date_range_sharp,
-                                              size: 40,
-                                            ),
-                                            onPressed: () async {
-                                              DateTime? date = DateTime(1900);
-                                              date = await showDatePicker(
-                                                  context: context,
-                                                  initialDate: DateTime.now(),
-                                                  firstDate: DateTime(2000),
-                                                  lastDate: DateTime(DateTime.now().year + 1));
-
-                                              dateToController.text = date!.day.toString() +
+                                        if (date != null) {
+                                          dateFromController.text =
+                                              date.day.toString() +
                                                   '/' +
                                                   date.month.toString() +
                                                   '/' +
                                                   date.year.toString();
-                                              numberContent.value++;
-                                            }),
-                                      ],
-                                    ),
+                                          numberContent.value++;
+                                        }
+                                      }),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                        // width: 50,
+                                        child: TextFormField(
+                                      validator: (value) {
+                                        if (value!.isEmpty) {
+                                          return 'Please enter Date';
+                                        }
+                                        if (!RegExp(r'\d{1,2}/\d{1,2}/\d{4}')
+                                            .hasMatch(value)) {
+                                          return 'Please enter correct Date';
+                                        }
+                                        return null;
+                                      },
+                                      controller: dateToController,
+                                      decoration: InputDecoration(
+                                        fillColor: Colors.white,
+                                        labelText: 'To',
+                                        hintText: "dd/mm/yyyy",
+                                      ),
+                                    )),
+                                  ),
+                                  IconButton(
+                                      padding: EdgeInsets.fromLTRB(0, 15, 0, 0),
+                                      icon: Icon(
+                                        Icons.date_range_sharp,
+                                        size: 40,
+                                      ),
+                                      onPressed: () async {
+                                        DateTime? date = DateTime(1900);
+                                        date = await showDatePicker(
+                                            context: context,
+                                            initialDate: DateTime.now(),
+                                            firstDate: DateTime(2000),
+                                            lastDate: DateTime(
+                                                DateTime.now().year + 1));
+
+                                        dateToController.text =
+                                            date!.day.toString() +
+                                                '/' +
+                                                date.month.toString() +
+                                                '/' +
+                                                date.year.toString();
+                                        numberContent.value++;
+                                      }),
+                                ],
+                              ),
                             ],
                           ),
                           actions: [
                             TextButton(
-                              child: Text("Reset",style: TextStyle(color: Global.iconColor)),
+                              child: Text("Reset",
+                                  style: TextStyle(color: Global.iconColor)),
                               onPressed: () {
                                 resetFilter();
                               },
                             ),
                             TextButton(
-                              child: Text("OK",style: TextStyle(color: Global.iconColor)),
+                              child: Text("OK",
+                                  style: TextStyle(color: Global.iconColor)),
                               onPressed: () {
                                 Navigator.of(cntxt).pop();
                               },
@@ -442,10 +462,17 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                 child: FloatingActionButton.extended(
                   heroTag: '1',
                   backgroundColor: Colors.lightGreen,
-                  label: Icon(Icons.download_rounded,color: Colors.white,),
+                  label: Icon(
+                    Icons.download_rounded,
+                    color: Colors.white,
+                  ),
                   onPressed: () {
                     Global.selectedFormField = Global.fieldsForm[0];
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => FormPage(null))).then((value) {
+                    Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => FormPage(null)))
+                        .then((value) {
                       setState(() {});
                       AdsUnits.showInterAd();
                     });
@@ -456,10 +483,16 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               FloatingActionButton.extended(
                 heroTag: '2',
                 backgroundColor: Colors.redAccent,
-                label: Icon(Icons.upload_rounded,color: Colors.white,),
+                label: Icon(
+                  Icons.upload_rounded,
+                  color: Colors.white,
+                ),
                 onPressed: () {
                   Global.selectedFormField = Global.fieldsForm[1];
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => FormPage(null))).then((value) {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => FormPage(null))).then((value) {
                     setState(() {});
                     AdsUnits.showInterAd();
                   });
@@ -501,14 +534,20 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                   flex: 1,
                   child: ValueListenableBuilder(
                       valueListenable: numberContent,
-                      builder: (BuildContext context, int value, Widget? child) {
+                      builder:
+                          (BuildContext context, int value, Widget? child) {
                         return FutureBuilder(
                             future: _inFutureList(),
-                            builder: (BuildContext context, AsyncSnapshot snapshot) {
-                              if (snapshot.connectionState == ConnectionState.waiting) {
+                            builder:
+                                (BuildContext context, AsyncSnapshot snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
                                 return Center(
                                     child: Column(
-                                  children: [Container(height: 200), CircularProgressIndicator()],
+                                  children: [
+                                    Container(height: 200),
+                                    CircularProgressIndicator()
+                                  ],
                                 ));
                               } else {
                                 // //print(snapshot.data);
@@ -520,27 +559,39 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     //totals widget
-                                    if (list.isNotEmpty) Expanded(flex: 0, child: totalsWidget(snapshot)),
+                                    if (list.isNotEmpty)
+                                      Expanded(
+                                          flex: 0,
+                                          child: totalsWidget(snapshot)),
                                     Expanded(
                                         flex: 1,
                                         child: list.isNotEmpty
                                             ? Container(
-                                                padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
+                                                padding: EdgeInsets.fromLTRB(
+                                                    0, 0, 0, 0),
                                                 child: ListView(
                                                   // controller:
                                                   //     contentScrollController,
                                                   shrinkWrap: true,
                                                   children: [
-                                                    for (int i = list.length - 1; i >= 0; i--)
+                                                    for (int i =
+                                                            list.length - 1;
+                                                        i >= 0;
+                                                        i--)
                                                       i != list.length - 5
-                                                          ? listCard(context, list[i], i)
+                                                          ? listCard(context,
+                                                              list[i], i)
                                                           : Column(
                                                               children: [
-                                                                listCard(context, list[i], i),
+                                                                listCard(
+                                                                    context,
+                                                                    list[i],
+                                                                    i),
                                                                 Container(
                                                                   height: 5,
                                                                 ),
-                                                                AdsUnits.googleBannerAd1()
+                                                                AdsUnits
+                                                                    .googleBannerAd1()
                                                               ],
                                                             ),
                                                     if (list.length < 5)
@@ -549,7 +600,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                                           Container(
                                                             height: 20,
                                                           ),
-                                                          AdsUnits.googleBannerAd1()
+                                                          AdsUnits
+                                                              .googleBannerAd1()
                                                         ],
                                                       ),
                                                     Container(
@@ -562,12 +614,17 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                                 children: [
                                                   Container(height: 40),
                                                   Text(
-                                                      (searchController.text.trim() != '' && allDataLength != 0)
+                                                      (searchController.text
+                                                                      .trim() !=
+                                                                  '' &&
+                                                              allDataLength !=
+                                                                  0)
                                                           ? 'No search result'
                                                           : (allDataLength == 0)
                                                               ? 'Please Add Some Data'
                                                               : 'No Records for this date range',
-                                                      style: TextStyle(fontSize: 23)),
+                                                      style: TextStyle(
+                                                          fontSize: 23)),
                                                   Container(height: 50),
                                                   AdsUnits.googleBannerAd1()
                                                 ],
@@ -598,7 +655,10 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                   padding: EdgeInsets.all(30),
                   child: Text(
                     'Settings',
-                    style: TextStyle(color: Colors.black, fontSize: 25, fontWeight: FontWeight.w500),
+                    style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 25,
+                        fontWeight: FontWeight.w500),
                     textAlign: TextAlign.start,
                   ),
                 ),
@@ -615,13 +675,19 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                           )),
                       title: Text(
                         'Currency',
-                        style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.w400),
+                        style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w400),
                       ),
-                      subtitle: Text(CurrencyData.symbol[Global.settingsBox.get('currencyIndex')] +
+                      subtitle: Text(CurrencyData
+                              .symbol[Global.settingsBox.get('currencyIndex')] +
                           '  ' +
-                          CurrencyData.currency[Global.settingsBox.get('currencyIndex')] +
+                          CurrencyData.currency[
+                              Global.settingsBox.get('currencyIndex')] +
                           '  ' +
-                          CurrencyData.country[Global.settingsBox.get('currencyIndex')]),
+                          CurrencyData.country[
+                              Global.settingsBox.get('currencyIndex')]),
                       onTap: () {
                         Navigator.pop(cntxt);
                         showDialog(
@@ -629,8 +695,14 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                           builder: (BuildContext cntxt1) {
                             return Dialog(
                               backgroundColor: Colors.white,
-                              insetPadding: MediaQuery.of(context).orientation == Orientation.portrait
-                                  ? EdgeInsets.fromLTRB(35, MediaQuery.of(context).size.height / 3, 35, 20)
+                              insetPadding: MediaQuery.of(context)
+                                          .orientation ==
+                                      Orientation.portrait
+                                  ? EdgeInsets.fromLTRB(
+                                      35,
+                                      MediaQuery.of(context).size.height / 3,
+                                      35,
+                                      20)
                                   : EdgeInsets.fromLTRB(35, 20, 35, 20),
                               child: Padding(
                                 padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
@@ -638,22 +710,31 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                   shrinkWrap: true,
                                   children: [
                                     Padding(
-                                        padding: EdgeInsets.fromLTRB(15, 20, 20, 5),
+                                        padding:
+                                            EdgeInsets.fromLTRB(15, 20, 20, 5),
                                         child: Text(
                                           'Choose Currency',
-                                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+                                          style: TextStyle(
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.w600),
                                         )),
-                                    for (int i = 0; i < CurrencyData.currency.length; i++)
+                                    for (int i = 0;
+                                        i < CurrencyData.currency.length;
+                                        i++)
                                       ListTile(
                                         title: Text(
                                           CurrencyData.country[i].toString(),
-                                          style: TextStyle(color: Global.iconColor, fontSize: 18),
+                                          style: TextStyle(
+                                              color: Global.iconColor,
+                                              fontSize: 18),
                                         ),
-                                        subtitle: Text(CurrencyData.currency[i].toString() +
+                                        subtitle: Text(CurrencyData.currency[i]
+                                                .toString() +
                                             '  ' +
                                             CurrencyData.symbol[i].toString()),
                                         onTap: () async {
-                                          await Global.settingsBox.put('currencyIndex', i);
+                                          await Global.settingsBox
+                                              .put('currencyIndex', i);
                                           Navigator.pop(cntxt1);
                                           cNotifier.value++;
                                           setState(() {});
@@ -679,12 +760,17 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                       )),
                   title: Text(
                     'Suggestion Data',
-                    style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.w400),
+                    style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w400),
                   ),
                   subtitle: Text('Edit Suggestions Lists'),
                   onTap: () {
                     Navigator.pop(cntxt);
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => Data())).then((value) {
+                    Navigator.push(context,
+                            MaterialPageRoute(builder: (context) => Data()))
+                        .then((value) {
                       setState(() {});
                       AdsUnits.showInterAd();
                     });
@@ -700,7 +786,10 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                       )),
                   title: Text(
                     'Backup & Restore',
-                    style: TextStyle(color: Colors.black, fontSize: 18, fontWeight: FontWeight.w400),
+                    style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w400),
                   ),
                   subtitle: Text('Save Backup on Google Drive'),
                   onTap: () async {
@@ -711,8 +800,9 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                 Container(
                     decoration: BoxDecoration(
                         //  color: Colors.green,
-                        borderRadius:
-                            BorderRadius.only(bottomLeft: Radius.circular(4.0), bottomRight: Radius.circular(4.0))),
+                        borderRadius: BorderRadius.only(
+                            bottomLeft: Radius.circular(4.0),
+                            bottomRight: Radius.circular(4.0))),
                     child: Padding(
                         padding: EdgeInsets.fromLTRB(20, 5, 20, 5),
                         child: Row(
@@ -720,7 +810,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                             TextButton(
                                 onPressed: () {
                                   Navigator.pop(cntxt);
-                                  launch("https://play.google.com/store/apps/developer?id=TOTP");
+                                  launch(
+                                      "https://play.google.com/store/apps/developer?id=TOTP");
                                 },
                                 child: Column(
                                   children: [
@@ -730,10 +821,13 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                       color: Global.iconColor,
                                     ),
                                     Padding(
-                                        padding: EdgeInsets.fromLTRB(0, 5, 0, 0),
+                                        padding:
+                                            EdgeInsets.fromLTRB(0, 5, 0, 0),
                                         child: Text(
                                           'More Apps',
-                                          style: TextStyle(fontSize: 12.0, color: Colors.black),
+                                          style: TextStyle(
+                                              fontSize: 12.0,
+                                              color: Colors.black),
                                         ))
                                   ],
                                 )),
@@ -746,7 +840,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                   // if (await inAppReview.isAvailable()) {
                                   // inAppReview.requestReview();
                                   // } else {
-                                  launch("https://play.google.com/store/apps/details?id=com.totp.cash_records");
+                                  launch(
+                                      "https://play.google.com/store/apps/details?id=com.totp.cash_records");
                                   // }
                                   // inAppReview.openStoreListing();
                                 },
@@ -758,10 +853,13 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                       color: Global.iconColor,
                                     ),
                                     Padding(
-                                        padding: EdgeInsets.fromLTRB(0, 5, 0, 0),
+                                        padding:
+                                            EdgeInsets.fromLTRB(0, 5, 0, 0),
                                         child: Text(
                                           'Rate this app',
-                                          style: TextStyle(fontSize: 12.0, color: Colors.black),
+                                          style: TextStyle(
+                                              fontSize: 12.0,
+                                              color: Colors.black),
                                         ))
                                   ],
                                 )),
@@ -782,10 +880,13 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                       color: Global.iconColor,
                                     ),
                                     Padding(
-                                        padding: EdgeInsets.fromLTRB(0, 6, 0, 0),
+                                        padding:
+                                            EdgeInsets.fromLTRB(0, 6, 0, 0),
                                         child: Text(
                                           'Share this App',
-                                          style: TextStyle(fontSize: 12.0, color: Colors.black),
+                                          style: TextStyle(
+                                              fontSize: 12.0,
+                                              color: Colors.black),
                                         ))
                                   ],
                                 )),
@@ -814,9 +915,11 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                   var lastBackup = '';
                   if (Global.settingsBox.get('backupDate') != null) {
                     final DateFormat formatter = DateFormat('dd-MM-yyyy HH:mm');
-                    lastBackup = formatter.format(Global.settingsBox.get('backupDate'));
+                    lastBackup =
+                        formatter.format(Global.settingsBox.get('backupDate'));
                   } else {
-                    lastBackup = Global.checkingBackup ? 'Checking for Backup' : 'Never';
+                    lastBackup =
+                        Global.checkingBackup ? 'Checking for Backup' : 'Never';
                   }
 
                   GlobalKey _toolTipKey = GlobalKey();
@@ -843,12 +946,17 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                           Icons.backup,
                                           color: Global.iconColor,
                                         )),
-                              title: Text(uploadingBackup ? 'Uploading Backup..' : 'Backup Now',
+                              title: Text(
+                                  uploadingBackup
+                                      ? 'Uploading Backup..'
+                                      : 'Backup Now',
                                   style: TextStyle(fontSize: 17)),
-                              subtitle: Text('Last : ' + lastBackup, style: TextStyle(fontSize: 12)),
+                              subtitle: Text('Last : ' + lastBackup,
+                                  style: TextStyle(fontSize: 12)),
                               trailing: IconButton(
                                 onPressed: () {
-                                  final dynamic tooltip = _toolTipKey.currentState;
+                                  final dynamic tooltip =
+                                      _toolTipKey.currentState;
                                   if (!toolTipVisible) {
                                     tooltip.ensureTooltipVisible();
                                     toolTipVisible = true;
@@ -863,7 +971,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                     showDuration: Duration(seconds: 10),
                                     decoration: BoxDecoration(
                                       color: Colors.blue.withOpacity(0.9),
-                                      borderRadius: const BorderRadius.all(Radius.circular(4)),
+                                      borderRadius: const BorderRadius.all(
+                                          Radius.circular(4)),
                                     ),
                                     textStyle: TextStyle(color: Colors.white),
                                     preferBelow: true,
@@ -879,13 +988,18 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                   builder: (BuildContext cntxt3) {
                                     return AlertDialog(
                                       title: Text('Alert'),
-                                      content: Text('Previous backup (if any) will be replaced by new backup...'),
+                                      content: Text(
+                                          'Previous backup (if any) will be replaced by new backup...'),
                                       actions: [
                                         TextButton(
                                             onPressed: () {
                                               Navigator.of(cntxt3).pop();
                                             },
-                                            child: Text('Cancel',style: TextStyle(color: Global.iconColor),)),
+                                            child: Text(
+                                              'Cancel',
+                                              style: TextStyle(
+                                                  color: Global.iconColor),
+                                            )),
                                         TextButton(
                                             onPressed: () async {
                                               Navigator.of(cntxt3).pop();
@@ -893,7 +1007,9 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                                 driveSync.uploadBackup();
                                               }
                                             },
-                                            child: Text('Backup',style: TextStyle(color: Global.iconColor)))
+                                            child: Text('Backup',
+                                                style: TextStyle(
+                                                    color: Global.iconColor)))
                                       ],
                                     );
                                   },
@@ -905,25 +1021,32 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                 Icons.settings_backup_restore,
                                 color: Global.iconColor,
                               ),
-                              title: Text('Restore Backup', style: TextStyle(fontSize: 17)),
+                              title: Text('Restore Backup',
+                                  style: TextStyle(fontSize: 17)),
                               onTap: () async {
                                 if (lastBackup == 'Never') {
                                   showToast('No Backup!', context: ctx);
-                                } else if (lastBackup == 'Checking for Backup') {
-                                  showToast('Checking for Backup!', context: ctx);
+                                } else if (lastBackup ==
+                                    'Checking for Backup') {
+                                  showToast('Checking for Backup!',
+                                      context: ctx);
                                 } else {
                                   showDialog(
                                     context: context,
                                     builder: (BuildContext cntxt6) {
                                       return AlertDialog(
                                         title: Text('Alert'),
-                                        content: Text('Current data (if any) will be replaced by backup restore...'),
+                                        content: Text(
+                                            'Current data (if any) will be replaced by backup restore...'),
                                         actions: [
                                           TextButton(
                                               onPressed: () {
                                                 Navigator.of(cntxt6).pop();
                                               },
-                                              child: Text('Cancel',style: TextStyle(color: Global.iconColor))),
+                                              child: Text('Cancel',
+                                                  style: TextStyle(
+                                                      color:
+                                                          Global.iconColor))),
                                           TextButton(
                                               onPressed: () async {
                                                 Navigator.of(cntxt6).pop();
@@ -931,22 +1054,36 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                                 showDialog(
                                                   barrierDismissible: false,
                                                   context: context,
-                                                  builder: (BuildContext cntxt) {
-                                                    cntxtOfRestoreProgressDialog = cntxt;
+                                                  builder:
+                                                      (BuildContext cntxt) {
+                                                    cntxtOfRestoreProgressDialog =
+                                                        cntxt;
                                                     return WillPopScope(
                                                         child: Dialog(
                                                           child: Column(
-                                                            mainAxisSize: MainAxisSize.min,
+                                                            mainAxisSize:
+                                                                MainAxisSize
+                                                                    .min,
                                                             children: [
                                                               Container(
-                                                                margin: EdgeInsets.fromLTRB(20, 30, 20, 20),
+                                                                margin: EdgeInsets
+                                                                    .fromLTRB(
+                                                                        20,
+                                                                        30,
+                                                                        20,
+                                                                        20),
                                                                 height: 50,
                                                                 width: 50,
-                                                                child: CircularProgressIndicator(),
+                                                                child:
+                                                                    CircularProgressIndicator(),
                                                               ),
                                                               Padding(
-                                                                padding: EdgeInsets.all(20),
-                                                                child: Text('Restoring Backup'),
+                                                                padding:
+                                                                    EdgeInsets
+                                                                        .all(
+                                                                            20),
+                                                                child: Text(
+                                                                    'Restoring Backup'),
                                                               )
                                                             ],
                                                           ),
@@ -957,7 +1094,9 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                                   },
                                                 );
                                               },
-                                              child: Text('Restore',style: TextStyle(color: Global.iconColor)))
+                                              child: Text('Restore',
+                                                  style: TextStyle(
+                                                      color: Global.iconColor)))
                                         ],
                                       );
                                     },
@@ -978,7 +1117,9 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                 'Auto Backup',
                                 style: TextStyle(fontSize: 17),
                               ),
-                              subtitle: Text(Global.listBackupInterval[Global.settingsBox.get('backupInterval')],
+                              subtitle: Text(
+                                  Global.listBackupInterval[
+                                      Global.settingsBox.get('backupInterval')],
                                   style: TextStyle(fontSize: 13)),
                               onTap: () async {
                                 showDialog(
@@ -991,34 +1132,66 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                         child: ListView(
                                           shrinkWrap: true,
                                           children: [
-                                            for (int i = 0; i < Global.listBackupInterval.length; i++)
+                                            for (int i = 0;
+                                                i <
+                                                    Global.listBackupInterval
+                                                        .length;
+                                                i++)
                                               i == 2
                                                   ? ListTile(
-                                                      title: Text(Global.listBackupInterval[i]),
+                                                      title: Text(Global
+                                                          .listBackupInterval[i]),
                                                       subtitle: Text(
                                                         '(Uses more internet data)',
-                                                        style: TextStyle(fontSize: 12),
+                                                        style: TextStyle(
+                                                            fontSize: 12),
                                                       ),
                                                       trailing: IconButton(
                                                         onPressed: () {
-                                                          final dynamic tooltip = _toolTipKey.currentState;
+                                                          final dynamic
+                                                              tooltip =
+                                                              _toolTipKey
+                                                                  .currentState;
                                                           if (!toolTipVisible) {
-                                                            tooltip.ensureTooltipVisible();
-                                                            toolTipVisible = true;
+                                                            tooltip
+                                                                .ensureTooltipVisible();
+                                                            toolTipVisible =
+                                                                true;
                                                           } else {
-                                                            tooltip.deactivate();
-                                                            toolTipVisible = false;
+                                                            tooltip
+                                                                .deactivate();
+                                                            toolTipVisible =
+                                                                false;
                                                           }
                                                         },
                                                         icon: Tooltip(
-                                                            padding: EdgeInsets.all(20),
-                                                            margin: EdgeInsets.fromLTRB(50, 0, 50, 10),
-                                                            showDuration: Duration(seconds: 10),
-                                                            decoration: BoxDecoration(
-                                                              color: Colors.blue.withOpacity(0.9),
-                                                              borderRadius: const BorderRadius.all(Radius.circular(4)),
+                                                            padding: EdgeInsets
+                                                                .all(20),
+                                                            margin:
+                                                                EdgeInsets
+                                                                    .fromLTRB(
+                                                                        50,
+                                                                        0,
+                                                                        50,
+                                                                        10),
+                                                            showDuration:
+                                                                Duration(
+                                                                    seconds:
+                                                                        10),
+                                                            decoration:
+                                                                BoxDecoration(
+                                                              color: Colors.blue
+                                                                  .withOpacity(
+                                                                      0.9),
+                                                              borderRadius:
+                                                                  const BorderRadius
+                                                                      .all(
+                                                                      Radius.circular(
+                                                                          4)),
                                                             ),
-                                                            textStyle: TextStyle(color: Colors.white),
+                                                            textStyle: TextStyle(
+                                                                color: Colors
+                                                                    .white),
                                                             preferBelow: true,
                                                             verticalOffset: 20,
                                                             key: _toolTipKey,
@@ -1026,18 +1199,24 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                                                 'Use this option if you do not have concern about internet '
                                                                 'data because this option may use more data if you open and close the app many times. '
                                                                 'If you really are not concern about data, we recommend you to use this option.',
-                                                            child: Icon(Icons.info_outline)),
+                                                            child: Icon(Icons
+                                                                .info_outline)),
                                                       ),
                                                       onTap: () {
-                                                        Global.settingsBox.put('backupInterval', i);
+                                                        Global.settingsBox.put(
+                                                            'backupInterval',
+                                                            i);
                                                         backupNotifier.value++;
                                                         Navigator.pop(cntxt);
                                                       },
                                                     )
                                                   : ListTile(
-                                                      title: Text(Global.listBackupInterval[i]),
+                                                      title: Text(Global
+                                                          .listBackupInterval[i]),
                                                       onTap: () {
-                                                        Global.settingsBox.put('backupInterval', i);
+                                                        Global.settingsBox.put(
+                                                            'backupInterval',
+                                                            i);
                                                         backupNotifier.value++;
                                                         Navigator.pop(cntxt);
                                                       },
@@ -1047,20 +1226,24 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                       );
                                     });
 
-                                if (Global.listBackupInterval[Global.settingsBox.get('backupInterval')] == 'Never') {
+                                if (Global.listBackupInterval[Global.settingsBox
+                                        .get('backupInterval')] ==
+                                    'Never') {
                                   showDialog(
                                     context: context,
                                     builder: (BuildContext cntxt6) {
                                       return AlertDialog(
                                         title: Text('Alert'),
-                                        content:
-                                            Text('Enabling Auto Backup option will replace previous backup if any...'),
+                                        content: Text(
+                                            'Enabling Auto Backup option will replace previous backup if any...'),
                                         actions: [
                                           TextButton(
                                               onPressed: () async {
                                                 Navigator.of(cntxt6).pop();
                                               },
-                                              child: Text('OK',style: TextStyle(color: Global.iconColor)))
+                                              child: Text('OK',
+                                                  style: TextStyle(
+                                                      color: Global.iconColor)))
                                         ],
                                       );
                                     },
@@ -1076,8 +1259,10 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                   color: Global.iconColor,
                                 ),
                               ),
-                              title: Text('Sign Out of Google', style: TextStyle(fontSize: 17)),
-                              subtitle: Text(email, style: TextStyle(fontSize: 12)),
+                              title: Text('Sign Out of Google',
+                                  style: TextStyle(fontSize: 17)),
+                              subtitle:
+                                  Text(email, style: TextStyle(fontSize: 12)),
                               onTap: () async {
                                 driveSync.clearCredentials();
                               },
@@ -1111,7 +1296,9 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                 height: 50,
                                 width: 50,
                               ),
-                              title: Text('Sign In with Google', style: TextStyle(fontSize: 17, color: Colors.white)),
+                              title: Text('Sign In with Google',
+                                  style: TextStyle(
+                                      fontSize: 17, color: Colors.white)),
                             ),
                           )),
                       Container(
@@ -1147,8 +1334,10 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                 'Welcome!',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.adventPro(
-                    textStyle:
-                        TextStyle(color: Colors.green, fontSize: 30, fontWeight: FontWeight.w600)),
+                    textStyle: TextStyle(
+                        color: Colors.green,
+                        fontSize: 30,
+                        fontWeight: FontWeight.w600)),
               )),
           Padding(
               padding: EdgeInsets.fromLTRB(30, 0, 30, 60),
@@ -1156,20 +1345,26 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                 'Thank you for choosing Cash Records.',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.adventPro(
-                    textStyle: TextStyle(color: Colors.black, fontSize: 20, fontWeight: FontWeight.w500)),
+                    textStyle: TextStyle(
+                        color: Colors.black,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w500)),
               )),
           Padding(
               padding: EdgeInsets.fromLTRB(0, 7, 0, 20),
               child: Text(
                 'Please choose your Currency',
                 style: GoogleFonts.adventPro(
-                    textStyle:
-                        TextStyle(color: Colors.green, fontSize: 20, fontWeight: FontWeight.w500)),
+                    textStyle: TextStyle(
+                        color: Colors.green,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w500)),
               )),
           ElevatedButton(
             style: ButtonStyle(
                 backgroundColor: MaterialStateProperty.all<Color>(Colors.white),
-                foregroundColor: MaterialStateProperty.all<Color>(Colors.white)),
+                foregroundColor:
+                    MaterialStateProperty.all<Color>(Colors.white)),
             child: Padding(
               padding: EdgeInsets.fromLTRB(0, 10, 0, 10),
               child: Text(
@@ -1193,11 +1388,14 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                             CurrencyData.country[i].toString(),
                             style: TextStyle(color: Colors.black, fontSize: 18),
                           ),
-                          subtitle:
-                              Text(CurrencyData.currency[i].toString() + '  ' + CurrencyData.symbol[i].toString()),
+                          subtitle: Text(CurrencyData.currency[i].toString() +
+                              '  ' +
+                              CurrencyData.symbol[i].toString()),
                           onTap: () async {
-                            currencySelected =
-                                '[' + CurrencyData.code[i].toString() + '] ' + CurrencyData.country[i].toString();
+                            currencySelected = '[' +
+                                CurrencyData.code[i].toString() +
+                                '] ' +
+                                CurrencyData.country[i].toString();
                             currencyIndex = i;
                             //  await Global.settingsBox.put('currencyIndex', i);
                             Navigator.pop(cntxt);
@@ -1215,26 +1413,34 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
               padding: EdgeInsets.fromLTRB(10, 20, 10, 20),
               child: Text(
                 CurrencyData.symbol[currencyIndex],
-                style: TextStyle(color: Colors.green, fontSize: 40, fontWeight: FontWeight.w500),
+                style: TextStyle(
+                    color: Colors.green,
+                    fontSize: 40,
+                    fontWeight: FontWeight.w500),
               )),
           Padding(
               padding: EdgeInsets.fromLTRB(10, 0, 10, 0),
               child: TextButton(
                   style: ButtonStyle(
                       elevation: MaterialStateProperty.all<double>(5.0),
-                      backgroundColor: MaterialStateProperty.all<Color>(Colors.limeAccent),
-                      foregroundColor: MaterialStateProperty.all<Color>(Colors.white)),
+                      backgroundColor:
+                          MaterialStateProperty.all<Color>(Colors.limeAccent),
+                      foregroundColor:
+                          MaterialStateProperty.all<Color>(Colors.white)),
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(10, 6, 10, 7),
                     child: Text(
                       'Done',
                       style: GoogleFonts.adventPro(
                           textStyle: TextStyle(
-                              color: Colors.black, fontSize: 20, fontWeight: FontWeight.w500)),
+                              color: Colors.black,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w500)),
                     ),
                   ),
                   onPressed: () async {
-                    await Global.settingsBox.put('currencyIndex', currencyIndex);
+                    await Global.settingsBox
+                        .put('currencyIndex', currencyIndex);
                     setState(() {});
                   }))
         ],
@@ -1263,7 +1469,9 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                 ),
                 Text(
                     '${CurrencyData.symbol[Global.settingsBox.get('currencyIndex')]} ' +
-                        ((snapshot.data[2] * pow(10.0, 2)).round().toDouble() / pow(10.0, 2)).toString() +
+                        ((snapshot.data[2] * pow(10.0, 2)).round().toDouble() /
+                                pow(10.0, 2))
+                            .toString() +
                         '    ',
                     style: TextStyle(
                         fontWeight: FontWeight.w500,
@@ -1289,7 +1497,9 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                         ))),
                 Text(
                     '${CurrencyData.symbol[Global.settingsBox.get('currencyIndex')]} ' +
-                        ((snapshot.data[3] * pow(10.0, 2)).round().toDouble() / pow(10.0, 2)).toString() +
+                        ((snapshot.data[3] * pow(10.0, 2)).round().toDouble() /
+                                pow(10.0, 2))
+                            .toString() +
                         '    ',
                     style: TextStyle(
                         fontWeight: FontWeight.w500,
@@ -1315,8 +1525,13 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                         ))),
                 Text(
                     '${CurrencyData.symbol[Global.settingsBox.get('currencyIndex')]} ' +
-                        ((snapshot.data[1] * pow(10.0, 2)).round().toDouble() / pow(10.0, 2)).toString(),
-                    style: TextStyle(fontWeight: FontWeight.w500, fontSize: 15, color: Colors.blue))
+                        ((snapshot.data[1] * pow(10.0, 2)).round().toDouble() /
+                                pow(10.0, 2))
+                            .toString(),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        fontSize: 15,
+                        color: Colors.blue))
               ],
             )
           ],
@@ -1359,26 +1574,35 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                   ),
                             ),
                             Spacer(),
-                            data['Note'].toString().trim() != '' && data['Note'] != null
+                            data['Note'].toString().trim() != '' &&
+                                    data['Note'] != null
                                 ? Padding(
                                     padding: EdgeInsets.fromLTRB(0, 0, 5, 0),
-                                    child: Icon(Icons.sticky_note_2_outlined, size: 14))
+                                    child: Icon(Icons.sticky_note_2_outlined,
+                                        size: 14))
                                 : Container(
                                     height: 0,
                                   ),
-                            data['attachments'] == null || data['attachments'].length == 0
+                            data['attachments'] == null ||
+                                    data['attachments'].length == 0
                                 ? Container(
                                     height: 0,
                                   )
                                 : Padding(
-                                    padding: EdgeInsets.fromLTRB(0, 1, 5, 0), child: Icon(Icons.attach_file, size: 13)),
+                                    padding: EdgeInsets.fromLTRB(0, 1, 5, 0),
+                                    child: Icon(Icons.attach_file, size: 13)),
                             Padding(
                               padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
                               child: Text(
                                 data['Date'].toString() +
                                     ', ' +
-                                    (data['id'] != null ? Global.getTimeFromMillisEpoch(data['id']) + ' ' : ''),
-                                style: TextStyle(fontSize: 13, color: Colors.black54
+                                    (data['id'] != null
+                                        ? Global.getTimeFromMillisEpoch(
+                                                data['id']) +
+                                            ' '
+                                        : ''),
+                                style: TextStyle(
+                                    fontSize: 13, color: Colors.black54
                                     // fontWeight:
                                     //     FontWeight.w600,
                                     ),
@@ -1392,7 +1616,10 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                             child: Align(
                                 alignment: Alignment.bottomLeft,
                                 child: Text(
-                                  data['Item'].toString().capitalizeFirstofEach + ' ',
+                                  data['Item']
+                                          .toString()
+                                          .capitalizeFirstofEach +
+                                      ' ',
                                   style: TextStyle(
                                       // fontWeight:
                                       //     FontWeight.w600,
@@ -1406,7 +1633,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                   data['Amount'].toString(),
                               style: TextStyle(
                                   fontWeight: FontWeight.w500,
-                                  color: data['Field'].toString() == Global.fieldsForm[0]
+                                  color: data['Field'].toString() ==
+                                          Global.fieldsForm[0]
                                       ? Color.fromARGB(
                                           //green
                                           1000,
@@ -1437,7 +1665,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                       padding: EdgeInsets.all(40),
                       child: Material(
                           color: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(5.0)),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(5.0)),
                           child: Padding(
                               padding: const EdgeInsets.all(10.0),
                               child: ListView(
@@ -1461,7 +1690,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                       shareData(data);
                                     },
                                   ),
-                                  data['Note'].toString().trim() != '' && data['Note'] != null
+                                  data['Note'].toString().trim() != '' &&
+                                          data['Note'] != null
                                       ? ListTile(
                                           leading: Icon(
                                             Icons.sticky_note_2_rounded,
@@ -1482,7 +1712,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                       : Container(
                                           height: 0,
                                         ),
-                                  data['attachments'] == null || data['attachments'].length == 0
+                                  data['attachments'] == null ||
+                                          data['attachments'].length == 0
                                       ? Container(
                                           height: 0,
                                         )
@@ -1519,7 +1750,11 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                       //@TODO Add functionality to edit the record...
                                       Global.selectedFormField = data['Field'];
                                       Navigator.of(cntxt1).pop();
-                                      Navigator.push(context, MaterialPageRoute(builder: (context) => FormPage(data)))
+                                      Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      FormPage(data)))
                                           .then((value) {
                                         setState(() {});
                                         AdsUnits.showInterAd();
@@ -1558,9 +1793,16 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
       List taxList = data['taxes'];
       for (int x = 0; x < taxList.length; x++) {
         if (x == taxList.length - 1) {
-          taxString = taxString + taxList[x]['percent'] + '% ' + taxList[x]['name'].toUpperCase();
+          taxString = taxString +
+              taxList[x]['percent'] +
+              '% ' +
+              taxList[x]['name'].toUpperCase();
         } else {
-          taxString = taxString + taxList[x]['percent'] + '% ' + taxList[x]['name'].toUpperCase() + ', ';
+          taxString = taxString +
+              taxList[x]['percent'] +
+              '% ' +
+              taxList[x]['name'].toUpperCase() +
+              ', ';
         }
       }
     }
@@ -1593,7 +1835,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
             Padding(
                 padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
                 child: TextButton(
-                  child: Text('Share',style: TextStyle(color: Global.iconColor)),
+                  child:
+                      Text('Share', style: TextStyle(color: Global.iconColor)),
                   onPressed: () async {
                     Navigator.of(cntxt).pop();
                     await Share.share(controller.text.trim());
@@ -1612,10 +1855,11 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
         return AlertDialog(
           backgroundColor: Colors.white,
           title: Text("Note"),
-          content: Text(data['Note'], style: TextStyle(fontSize: 16, color: Colors.black54)),
+          content: Text(data['Note'],
+              style: TextStyle(fontSize: 16, color: Colors.black54)),
           actions: [
             TextButton(
-              child: Text("OK",style: TextStyle(color: Global.iconColor)),
+              child: Text("OK", style: TextStyle(color: Global.iconColor)),
               onPressed: () {
                 Navigator.of(cntxt).pop();
               },
@@ -1636,20 +1880,21 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
           content: Text("Sure to delete this Entry"),
           actions: [
             TextButton(
-              child: Text("No",style: TextStyle(color: Global.iconColor)),
+              child: Text("No", style: TextStyle(color: Global.iconColor)),
               onPressed: () {
                 Navigator.of(cntxt2).pop();
               },
             ),
             TextButton(
-              child: Text("Yes",style: TextStyle(color: Global.iconColor)),
+              child: Text("Yes", style: TextStyle(color: Global.iconColor)),
               onPressed: () async {
                 //var directory = await ExtStorage.getExternalStorageDirectory();
                 // await File(listPath[i]).delete().then((value) => numberContent.value++);
                 var dataBox = await Hive.openBox('dataBox');
                 dataBox.delete(data['id'].toString());
 
-                if (data['attachments'] != null && data['attachments'].length != 0) {
+                if (data['attachments'] != null &&
+                    data['attachments'].length != 0) {
                   for (Map attchMap in data['attachments']) {
                     String path = await Global.getDataDirectoryPath() +
                         '/profile0/attachments/' +
@@ -1700,7 +1945,8 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                         cursor: SystemMouseCursors.click,
                                         child: GestureDetector(
                                           onTap: () async {
-                                            String path = await Global.getDataDirectoryPath() +
+                                            String path = await Global
+                                                    .getDataDirectoryPath() +
                                                 '/profile0/attachments/' +
                                                 data['id'].toString() +
                                                 '/' +
@@ -1711,20 +1957,29 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                             OpenFile.open(path);
                                           },
                                           child: Container(
-                                            decoration: BoxDecoration(color: Colors.blue[50]),
+                                            decoration: BoxDecoration(
+                                                color: Colors.blue[50]),
                                             child: Padding(
-                                              padding: EdgeInsets.fromLTRB(12, 5, 10, 5),
+                                              padding: EdgeInsets.fromLTRB(
+                                                  12, 5, 10, 5),
                                               child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
                                                 children: [
-                                                  Text(attchMap['name'].toString().toUpperCase(),
+                                                  Text(
+                                                      attchMap['name']
+                                                          .toString()
+                                                          .toUpperCase(),
                                                       style: TextStyle(
                                                           color: Colors.black87,
                                                           fontSize: 16,
-                                                          fontWeight: FontWeight.w600)),
+                                                          fontWeight:
+                                                              FontWeight.w600)),
                                                   Text(
                                                     attchMap['ext'],
-                                                    style: TextStyle(color: Colors.grey, fontSize: 14),
+                                                    style: TextStyle(
+                                                        color: Colors.grey,
+                                                        fontSize: 14),
                                                   )
                                                 ],
                                               ),
@@ -1742,38 +1997,59 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                                 context: context,
                                                 builder: (BuildContext cntxt) {
                                                   return AlertDialog(
-                                                    backgroundColor: Colors.white,
+                                                    backgroundColor:
+                                                        Colors.white,
                                                     title: Text("Alert"),
-                                                    content: Text("Sure to delete this Entry"),
+                                                    content: Text(
+                                                        "Sure to delete this Entry"),
                                                     actions: [
                                                       TextButton(
-                                                        child: Text("No",style: TextStyle(color: Global.iconColor)),
+                                                        child: Text("No",
+                                                            style: TextStyle(
+                                                                color: Global
+                                                                    .iconColor)),
                                                         onPressed: () {
-                                                          Navigator.of(cntxt).pop();
+                                                          Navigator.of(cntxt)
+                                                              .pop();
                                                         },
                                                       ),
                                                       TextButton(
-                                                        child: Text("Yes",style: TextStyle(color: Global.iconColor)),
+                                                        child: Text("Yes",
+                                                            style: TextStyle(
+                                                                color: Global
+                                                                    .iconColor)),
                                                         onPressed: () async {
-                                                          String path = await Global.getDataDirectoryPath() +
+                                                          String path = await Global
+                                                                  .getDataDirectoryPath() +
                                                               '/profile0/attachments/' +
-                                                              data['id'].toString() +
+                                                              data['id']
+                                                                  .toString() +
                                                               '/' +
-                                                              attchMap['attId'].toString() +
+                                                              attchMap['attId']
+                                                                  .toString() +
                                                               '.' +
                                                               attchMap['ext'];
 
-                                                          File file = File(path);
+                                                          File file =
+                                                              File(path);
                                                           file.delete();
 
-                                                          data['attachments'].remove(attchMap);
+                                                          data['attachments']
+                                                              .remove(attchMap);
                                                           //await File(listPath[i]).writeAsString(jsonEncode(list[i]));
-                                                          var dataBox = await Hive.openBox('dataBox');
-                                                          dataBox.put(data['id'].toString(), data);
-                                                          notifierAttachList.value++;
+                                                          var dataBox =
+                                                              await Hive.openBox(
+                                                                  'dataBox');
+                                                          dataBox.put(
+                                                              data['id']
+                                                                  .toString(),
+                                                              data);
+                                                          notifierAttachList
+                                                              .value++;
                                                           numberContent.value++;
 
-                                                          Navigator.of(cntxt).pop();
+                                                          Navigator.of(cntxt)
+                                                              .pop();
                                                         },
                                                       ),
                                                     ],
@@ -1785,7 +2061,9 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                                                 padding: EdgeInsets.all(2),
                                                 child: Tooltip(
                                                   message: 'Delete',
-                                                  child: Icon(Icons.delete, color: Colors.lime, size: 30),
+                                                  child: Icon(Icons.delete,
+                                                      color: Colors.lime,
+                                                      size: 30),
                                                 )))),
                                   )
                                 ],
@@ -1795,7 +2073,7 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
                   })),
           actions: [
             TextButton(
-              child: Text("OK",style: TextStyle(color: Global.iconColor)),
+              child: Text("OK", style: TextStyle(color: Global.iconColor)),
               onPressed: () {
                 Navigator.of(cntxt).pop();
               },
@@ -1812,28 +2090,40 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
     double outAmount = 0;
     List allFiles = [];
 
-    List srchQrys = searchController.text.trim().replaceAll('  ', ' ').split(' ');
+    List srchQrys =
+        searchController.text.trim().replaceAll('  ', ' ').split(' ');
     // srchQrys.remove('');
-    DateTime fromDate = DateTime.utc(int.parse(dateFromController.text.split('/')[2]),
-        int.parse(dateFromController.text.split('/')[1]), int.parse(dateFromController.text.split('/')[0]));
-    DateTime toDate = DateTime.utc(int.parse(dateToController.text.split('/')[2]),
-        int.parse(dateToController.text.split('/')[1]), int.parse(dateToController.text.split('/')[0]));
+    DateTime fromDate = DateTime.utc(
+        int.parse(dateFromController.text.split('/')[2]),
+        int.parse(dateFromController.text.split('/')[1]),
+        int.parse(dateFromController.text.split('/')[0]));
+    DateTime toDate = DateTime.utc(
+        int.parse(dateToController.text.split('/')[2]),
+        int.parse(dateToController.text.split('/')[1]),
+        int.parse(dateToController.text.split('/')[0]));
 
     var dataBox = await Hive.openBox('dataBox');
     List allData = dataBox.values.toList();
     allDataLength = allData.length;
     allData.sort((a, b) => DateTime.utc(
-            int.parse(a['Date'].split('/')[2]), int.parse(a['Date'].split('/')[1]), int.parse(a['Date'].split('/')[0]))
-        .compareTo(DateTime.utc(int.parse(b['Date'].split('/')[2]), int.parse(b['Date'].split('/')[1]),
+            int.parse(a['Date'].split('/')[2]),
+            int.parse(a['Date'].split('/')[1]),
+            int.parse(a['Date'].split('/')[0]))
+        .compareTo(DateTime.utc(
+            int.parse(b['Date'].split('/')[2]),
+            int.parse(b['Date'].split('/')[1]),
             int.parse(b['Date'].split('/')[0]))));
 
     for (int j = 0; j < allData.length; j++) {
       Map fileMap = allData[j];
 
-      DateTime dt = DateTime.utc(int.parse(fileMap['Date'].split('/')[2]), int.parse(fileMap['Date'].split('/')[1]),
+      DateTime dt = DateTime.utc(
+          int.parse(fileMap['Date'].split('/')[2]),
+          int.parse(fileMap['Date'].split('/')[1]),
           int.parse(fileMap['Date'].split('/')[0]));
 
-      if (_selectedFieldContent.toLowerCase() == fileMap['Field'].toString().toLowerCase()) {
+      if (_selectedFieldContent.toLowerCase() ==
+          fileMap['Field'].toString().toLowerCase()) {
         //IN
         if ((dt.isAfter(fromDate) || dt.isAtSameMomentAs(fromDate)) &&
             (dt.isBefore(toDate) || dt.isAtSameMomentAs(toDate))) {
@@ -1891,11 +2181,36 @@ class MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
 
   bool searchCondition(fileMap, srchQrys) {
     if (fileMap.toString().toLowerCase().contains(srchQrys[0].toLowerCase()) &&
-        (srchQrys.length >= 2 ? fileMap.toString().toLowerCase().contains(srchQrys[1].toLowerCase()) : true) &&
-        (srchQrys.length >= 3 ? fileMap.toString().toLowerCase().contains(srchQrys[2].toLowerCase()) : true) &&
-        (srchQrys.length >= 4 ? fileMap.toString().toLowerCase().contains(srchQrys[3].toLowerCase()) : true) &&
-        (srchQrys.length >= 5 ? fileMap.toString().toLowerCase().contains(srchQrys[4].toLowerCase()) : true) &&
-        (srchQrys.length >= 6 ? fileMap.toString().toLowerCase().contains(srchQrys[5].toLowerCase()) : true)) {
+        (srchQrys.length >= 2
+            ? fileMap
+                .toString()
+                .toLowerCase()
+                .contains(srchQrys[1].toLowerCase())
+            : true) &&
+        (srchQrys.length >= 3
+            ? fileMap
+                .toString()
+                .toLowerCase()
+                .contains(srchQrys[2].toLowerCase())
+            : true) &&
+        (srchQrys.length >= 4
+            ? fileMap
+                .toString()
+                .toLowerCase()
+                .contains(srchQrys[3].toLowerCase())
+            : true) &&
+        (srchQrys.length >= 5
+            ? fileMap
+                .toString()
+                .toLowerCase()
+                .contains(srchQrys[4].toLowerCase())
+            : true) &&
+        (srchQrys.length >= 6
+            ? fileMap
+                .toString()
+                .toLowerCase()
+                .contains(srchQrys[5].toLowerCase())
+            : true)) {
       return true;
     } else {
       return false;
