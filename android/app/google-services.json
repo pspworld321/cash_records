@@ -1,0 +1,63 @@
+{
+  "project_info": {
+    "project_number": "543807404983",
+    "project_id": "cash-records",
+    "storage_bucket": "cash-records.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:543807404983:android:dccee19d4e4b8db02ec632",
+        "android_client_info": {
+          "package_name": "com.totp.cash_records"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "543807404983-aat294lceqp5d3jglnflke8navvqcm9t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.totp.cash_records",
+            "certificate_hash": "2c215d71a8c45563bd10ee3df60dc88e69c95e96"
+          }
+        },
+        {
+          "client_id": "543807404983-d6c8gh2qpfk10tlf8ucnrl2md8ue7nci.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.totp.cash_records",
+            "certificate_hash": "42c118017abc06d5a13ad46f90aba800a23a95d9"
+          }
+        },
+        {
+          "client_id": "543807404983-k5krg3dtn074u8g1rhfvijimldavlmav.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.totp.cash_records",
+            "certificate_hash": "44a79450311809839385949b909ef5406a922463"
+          }
+        },
+        {
+          "client_id": "543807404983-0ub3agvaiq8ejoljc8rftrisfokv33pp.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD9w7SjxCh9Gh5boup6rxVeh0puZJpvkIg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "543807404983-0ub3agvaiq8ejoljc8rftrisfokv33pp.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

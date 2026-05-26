@@ -14,6 +14,9 @@ class Global {
   static var backgroundColor = Color.fromRGBO( 255, 255, 255, 1.0);
   static var mainCardColor = Color.fromRGBO( 254, 255, 249, 1.0);
 
+  static var authDrive;
+  static  var authClient;
+
   static bool loggedIn = false;
 
   static bool checkingBackup = false;

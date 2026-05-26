@@ -35,7 +35,7 @@ class FormPageState extends State<FormPage> {
           title: Text(Global.selectedFormField),
         ),
         body: Container(
-            margin: EdgeInsets.fromLTRB(20, 10, 20, 0),
+            margin: const EdgeInsets.fromLTRB(20, 10, 20, 0),
             child: SingleChildScrollView(
                 controller: formsScrollController,
                 child: Column(children: [
@@ -47,7 +47,7 @@ class FormPageState extends State<FormPage> {
                                     :  OutForm(context, data);
                       }),
                 Container(
-                    margin: EdgeInsets.fromLTRB(0, 20, 0, 0),
+                    margin: const EdgeInsets.fromLTRB(0, 20, 0, 0),
                     child: AdsUnits.googleBannerAd2())
                 ]))));
   }

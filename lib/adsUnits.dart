@@ -5,8 +5,8 @@ import 'package:cash_records/global.dart';
 import 'package:cash_records/settings.dart';
 import 'main.dart';
 
-final banner1AdId = 'ca-app-pub-5704045408668888/1570439296';
-final banner2AdId = 'ca-app-pub-5704045408668888/2964068557';
+const banner1AdId = 'ca-app-pub-5704045408668888/1570439296';
+const banner2AdId = 'ca-app-pub-5704045408668888/2964068557';
 const interAdId = 'ca-app-pub-5704045408668888/6137026801';
 
 class AdsUnits {
@@ -26,18 +26,16 @@ class AdsUnits {
   static loadInterAd() {
     InterstitialAd.load(
         adUnitId: interAdId,
-        request: AdRequest(),
+        request: const AdRequest(),
         adLoadCallback: InterstitialAdLoadCallback(onAdLoaded: (InterstitialAd ad) {
           // Keep a reference to the ad so you can show it later.
           interstitialAd = ad;
           interstitialAd.fullScreenContentCallback = FullScreenContentCallback(
             onAdShowedFullScreenContent: (InterstitialAd ad) => print('%ad onAdShowedFullScreenContent.'),
             onAdDismissedFullScreenContent: (InterstitialAd ad) {
-              print('$ad onAdDismissedFullScreenContent.');
               ad.dispose();
             },
             onAdFailedToShowFullScreenContent: (InterstitialAd ad, AdError error) {
-              print('$ad onAdFailedToShowFullScreenContent: $error');
               ad.dispose();
             },
             onAdImpression: (InterstitialAd ad) => print('$ad impression occurred.'),
@@ -45,7 +43,6 @@ class AdsUnits {
 
           interAdLoaded = true;
         }, onAdFailedToLoad: (LoadAdError error) {
-          print('InterstitialAd failed to load: $error');
         }));
   }
 
@@ -148,17 +145,14 @@ class AdsUnits {
   BannerAd myBannerAd1 = BannerAd(
     adUnitId: banner1AdId,
     size: AdSize.mediumRectangle,
-    request: AdRequest(),
+    request: const AdRequest(),
     listener: BannerAdListener(
       onAdFailedToLoad: (Ad, err) {
-        print('Ad error.' + err.toString());
       },
       onAdOpened: (Ad ad) {
-        print('Ad opened.');
         AdsUnits.gAdClicked = true;
         settings['gAdClickedTime'] = DateTime.now();
         // Global.saveSettings();
-        print(AdsUnits.gAdClicked);
         MyHomePageState.bannerNotifier.value++;
         FormPageState.bannerNotifier.value++;
       },
@@ -168,17 +162,14 @@ class AdsUnits {
   BannerAd myBannerAd2 = BannerAd(
     adUnitId: banner2AdId,
     size: AdSize.mediumRectangle,
-    request: AdRequest(),
+    request: const AdRequest(),
     listener: BannerAdListener(
-      onAdFailedToLoad: (Ad, err) {
-        print('Ad error.' + err.toString());
+      onAdFailedToLoad: (ad, err) {
       },
       onAdOpened: (Ad ad) {
-        print('Ad opened.');
         AdsUnits.gAdClicked = true;
         settings['gAdClickedTime'] = DateTime.now();
         // Global.saveSettings();
-        print(AdsUnits.gAdClicked);
         FormPageState.bannerNotifier.value++;
       },
     ),
@@ -186,18 +177,15 @@ class AdsUnits {
 
   BannerAd myBannerAd3 = BannerAd(
     adUnitId: banner1AdId,
-    size: AdSize.banner,
-    request: AdRequest(),
+    size: AdSize.mediumRectangle,
+    request: const AdRequest(),
     listener: BannerAdListener(
-      onAdFailedToLoad: (Ad, err) {
-        print('Ad error.' + err.toString());
+      onAdFailedToLoad: (ad, err) {
       },
       onAdOpened: (Ad ad) {
-        print('Ad opened.');
         AdsUnits.gAdClicked = true;
         settings['gAdClickedTime'] = DateTime.now();
         // Global.saveSettings();
-        print(AdsUnits.gAdClicked);
         DataState.bannerNotifier.value++;
       },
     ),

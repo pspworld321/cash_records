@@ -1,81 +1,79 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter_web_browser/flutter_web_browser.dart';
+import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 
-import 'package:flutter_styled_toast/flutter_styled_toast.dart';
 import 'package:archive/archive_io.dart';
 import 'package:flutter/material.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as ga;
 import 'package:googleapis_auth/auth_io.dart';
 import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:googleapis/people/v1.dart' as ppl;
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import 'global.dart';
 import 'main.dart';
 
 class DriveSync {
-  var _clientId = "543807404983-d6c8gh2qpfk10tlf8ucnrl2md8ue7nci.apps.googleusercontent.com";
-  var _scopes = ['https://www.googleapis.com/auth/drive.appdata', 'https://www.googleapis.com/auth/userinfo.email'];
-  var  authDrive;
+  final _clientId = "543807404983-d6c8gh2qpfk10tlf8ucnrl2md8ue7nci.apps.googleusercontent.com";
+  final _scopes = ['https://www.googleapis.com/auth/drive.appdata', 'https://www.googleapis.com/auth/userinfo.email'];
 
-  // final InAppBrowser browser = new InAppBrowser();
+  var backupName = "cashRecordsBackup";
 
-  //Get Authenticated Http Client
-  authenticateDrive() async {
-    //Get Credentials
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: <String>[
+      'https://www.googleapis.com/auth/drive.appdata',
+    ],
+  );
+
+  Future<void> handleSignInSilently() async {
+
     var credentials = await getCredentials();
-    if (credentials == null) {
-      //Needs user authentication
-      var authClient = await clientViaUserConsent(ClientId(_clientId, ''), _scopes, (url) async {
-        //Open Url in Browser
-        if (Platform.isAndroid) {
-          // var options = InAppBrowserClassOptions(
-          //     crossPlatform: InAppBrowserOptions(hideUrlBar: false),
-          //     inAppWebViewGroupOptions: InAppWebViewGroupOptions(crossPlatform: InAppWebViewOptions(javaScriptEnabled: true)));
-          // browser.openUrlRequest(urlRequest: URLRequest(url: Uri.parse(url)), options: options);
-
-          FlutterWebBrowser.openWebPage(
-              url: url,
-              customTabsOptions: CustomTabsOptions(
-                toolbarColor: Colors.lime,
-              ));
-        } else {
-          launch(url);
-        }
-      });
-
-      try {
-        var url = Uri.parse('https://www.googleapis.com/oauth2/v1/userinfo?access_token=${authClient.credentials.accessToken.data}');
-        var response = await http.get(url);
-        Map responseMap = jsonDecode(response.body);
-        MyHomePageState.email = responseMap['email'];
-        await Global.settingsBox.put('userEmail', responseMap['email']);
-        print(responseMap);
-      } catch (e, s) {
-        print(e);
-        print(s);
-      }
-
-      authDrive = ga.DriveApi(authClient);
-      await saveCredentials(authClient.credentials.accessToken, authClient.credentials.refreshToken.toString());
-      checkForBackup();
-      Global.loggedIn = true;
-      MyHomePageState.backupNotifier.value++;
-    } else {
+    if (credentials != null) {
       //Already authenticated
       await refreshTheToken();
-      DateTime? dt = DateTime.tryParse(credentials["expiry"]);
-      var authClient = authenticatedClient(
+      Global.authClient = authenticatedClient(
           http.Client(),
-          AccessCredentials(AccessToken(credentials["type"], credentials['access_token'], dt!),
+          AccessCredentials(AccessToken(credentials["type"], credentials['access_token'], DateTime.tryParse(credentials["expiry"])!),
               credentials["refreshToken"], _scopes));
-
-      authDrive = ga.DriveApi(authClient);
+      Global.authDrive = ga.DriveApi(Global.authClient);
+    } else {
+      _googleSignIn.onCurrentUserChanged.listen((GoogleSignInAccount? account) async {
+        if (account != null) {
+          debugPrint('handleGoogleSignIn: onCurrentUserChanged');
+          signInInit(account);
+        }
+      });
+      await _googleSignIn.signInSilently();
     }
+  }
+
+  Future<void> signInInit(GoogleSignInAccount? account) async {
+    // print(account!.email);
+    MyHomePageState.email = account!.email;
+    await Global.settingsBox.put('userEmail', account.email);
+    Global.authClient = await _googleSignIn.authenticatedClient();
+    Global.authDrive = ga.DriveApi(Global.authClient);
+    checkForBackup();
+    Global.loggedIn = true;
+    MyHomePageState.backupNotifier.value++;
+  }
+
+  Future<void> handleSignIn() async {
+    try {
+      await _googleSignIn.signIn();
+      if (_googleSignIn.currentUser != null) {
+        // print(_googleSignIn.currentUser!.email);
+        signInInit(_googleSignIn.currentUser);
+      }
+    } catch (error) {
+      print(error); // ignore: avoid_print
+    }
+  }
+
+  Future<void> handleSignOut() async {
+    await _googleSignIn.disconnect();
+    clearCredentials();
   }
 
   refreshTheToken() async {
@@ -95,20 +93,13 @@ class DriveSync {
     return responseMap;
   }
 
-  authenticate() async {
-    Map credentials = (await getCredentials()) ?? {};
-    if (credentials == {} || authDrive == null || (DateTime.now().millisecondsSinceEpoch - credentials['time_saved_at']) > 3500000) {
-      await authenticateDrive();
-    }
-  }
-
   uploadBackup() async {
     MyHomePageState.uploadingBackup = true;
     MyHomePageState.backupNotifier.value++;
     print('upload backup');
-    await authenticate();
+    await handleSignInSilently();
     var encoder = ZipFileEncoder();
-    var zipPath = await Global.getDataDirectoryPath() + '/cashRecordsBackup.zip';
+    var zipPath = await Global.getDataDirectoryPath() + '/$backupName.zip';
     encoder.create(zipPath);
     Directory dir = Directory(await Global.getDataDirectoryPath() + '/');
     List files = await dir.list().toList();
@@ -121,24 +112,24 @@ class DriveSync {
     encoder.close();
     try {
       var query = '''mimeType = "application/zip"
-           and trashed = false and name = "cashRecordsBackup"''';
+           and trashed = false and name = "$backupName"''';
       ga.FileList listMap =
-          await authDrive.files.list(spaces: 'appDataFolder', q: query, orderBy: 'modifiedTime', $fields: 'files(id,name,modifiedTime)');
-     late ga.File responseFile;
+      await Global.authDrive.files.list(spaces: 'appDataFolder', q: query, orderBy: 'modifiedTime', $fields: 'files(id,name,modifiedTime)');
+      ga.File responseFile = new ga.File();
       ga.File fileToUpload = ga.File();
-      fileToUpload.name = 'cashRecordsBackup';
+      fileToUpload.name = '$backupName';
       fileToUpload.mimeType = 'application/zip';
 
       File zipFile = File(zipPath);
       if (listMap.files != null && listMap.files!.length > 0) {
-        responseFile = await authDrive.files.update(fileToUpload, listMap.files![listMap.files!.length - 1].id.toString(),
+        responseFile = await Global.authDrive.files.update(fileToUpload, listMap.files![listMap.files!.length - 1].id.toString(),
             addParents: 'appDataFolder', uploadMedia: ga.Media(zipFile.openRead(), await File(zipPath).length()), $fields: 'modifiedTime,id');
       } else if (listMap.files != null && listMap.files!.length == 0) {
         fileToUpload.parents = ['appDataFolder'];
-        responseFile = await authDrive.files
+        responseFile = await Global.authDrive.files
             .create(fileToUpload, uploadMedia: ga.Media(zipFile.openRead(), await File(zipPath).length()), $fields: 'modifiedTime,id');
       }
-      print(responseFile.id.toString());
+      print(responseFile.id);
       if (responseFile.id != null) {
         await Global.settingsBox.put('backupDate', responseFile.modifiedTime!.toLocal());
       }
@@ -153,20 +144,74 @@ class DriveSync {
     }
   }
 
-  restoreBackup() async {
+  restoreDialog(context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext cntxt6) {
+        return AlertDialog(
+          title: Text('Alert'),
+          content: Text('Current data (if any) will be replaced by backup restore...'),
+          actions: [
+            TextButton(
+                onPressed: () {
+                  Navigator.of(cntxt6).pop();
+                },
+                child: Text('Cancel')),
+            TextButton(
+              child: Text('Restore'),
+              onPressed: () async {
+                var cntxt;
+                Navigator.of(cntxt6).pop();
+                showDialog(
+                  barrierDismissible: false,
+                  context: context,
+                  builder: (BuildContext cntxt12) {
+                    cntxt = cntxt12;
+                    return Dialog(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            margin: EdgeInsets.fromLTRB(20, 30, 20, 20),
+                            height: 50,
+                            width: 50,
+                            child: CircularProgressIndicator(),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.all(20),
+                            child: Text('Restoring Backup'),
+                          )
+                        ],
+                      ),
+                    );
+                  },
+                );
+                await restoreBackup(cntxt);
+                Navigator.of(cntxt).pop();
+              },
+            )
+          ],
+        );
+      },
+    );
+  }
+
+  restoreBackup(cntxt) async {
     print('restore : ');
-    await authenticate();
+
+    await handleSignInSilently();
     //check for backup to restore
     try {
       var query = '''mimeType = "application/zip"
-           and trashed = false and name = "cashRecordsBackup"''';
+           and trashed = false and name = "$backupName"''';
       ga.FileList listMap =
-          await authDrive.files.list(spaces: 'appDataFolder', q: query, orderBy: 'modifiedTime', $fields: 'files(id,name,modifiedTime)');
+      await Global.authDrive.files.list(spaces: 'appDataFolder', q: query, orderBy: 'modifiedTime', $fields: 'files(id,name,modifiedTime)');
       print(listMap.files);
       if (listMap.files != null && listMap.files!.length > 0) {
-        ga.Media? file = (await authDrive.files.get(listMap.files![listMap.files!.length - 1].id.toString(), downloadOptions: ga.DownloadOptions.fullMedia)) as ga.Media?;
+        ga.Media file = (await Global.authDrive.files
+            .get(listMap.files![listMap.files!.length - 1].id.toString(), downloadOptions: ga.DownloadOptions.fullMedia)) as ga.Media;
         List<int> dataStore = [];
-        file!.stream.listen((data) {
+        file.stream.listen((data) {
           dataStore.insertAll(dataStore.length, data);
         }, onDone: () async {
           // print('onDone : restoreBackup');
@@ -184,25 +229,23 @@ class DriveSync {
           await Hive.close();
           Global.settingsBox = await Hive.openBox('settings');
           Global.brandInfoBox = await Hive.openBox('brandInfoBox');
-          Navigator.of(MyHomePageState.cntxtOfRestoreProgressDialog).pop();
+          // showToast('Backup restored!');
+          // Future.delayed(Duration(microseconds: 100));
           runApp(MyApp());
 
           // print('result from driveSync : ${MyHomePageState.restoreBackupResult}');
-          // showToast('Backup restored!');
           // MyHomePageState.backupNotifier.value++;
         });
       } else {
         print('no backup found');
         // MyHomePageState.restoreBackupResult ='No backup found';
-        Navigator.of(MyHomePageState.cntxtOfRestoreProgressDialog).pop();
-        showToast('No backup found',context: MyHomePageState.ctx);
+        // showToast('No backup found');
       }
     } catch (e, s) {
       print('error restoring backup');
-      // MyHomePageState.restoreBackupResult ='Error restoring backup';
-      Navigator.of(MyHomePageState.cntxtOfRestoreProgressDialog).pop();
-      showToast('Error restoring backup',context: MyHomePageState.ctx);
       print(e.toString() + s.toString());
+      // MyHomePageState.restoreBackupResult ='Error restoring backup';
+      // showToast('Error restoring backup');
     }
   }
 
@@ -213,9 +256,9 @@ class DriveSync {
     //check for backup and get date
     try {
       var query = '''mimeType = "application/zip"
-           and trashed = false and name = "cashRecordsBackup"''';
+           and trashed = false and name = "$backupName"''';
       ga.FileList listMap =
-          await authDrive.files.list(spaces: 'appDataFolder', q: query, orderBy: 'modifiedTime', $fields: 'files(id,name,modifiedTime)');
+      await Global.authDrive.files.list(spaces: 'appDataFolder', q: query, orderBy: 'modifiedTime', $fields: 'files(id,name,modifiedTime)');
       print(listMap.files);
       if (listMap.files != null && listMap.files!.length > 0) {
         final DateFormat formatter = DateFormat('dd-MM-yyyy HH:mm');
@@ -230,6 +273,7 @@ class DriveSync {
       }
     } catch (e, s) {
       print('error checking backup');
+      print(e.toString() + s.toString());
       //return 'Error';
     }
 
