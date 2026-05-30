@@ -20,13 +20,18 @@ class DriveSync {
 
   var backupName = "cashRecordsBackup";
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: <String>[
-      'https://www.googleapis.com/auth/drive.appdata',
-    ],
-  );
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
 
-  Future<void> handleSignInSilently() async {
+  Future<void> restoreSession() async {
+    // initialize
+    await _googleSignIn.initialize(
+        clientId: _clientId,
+    );
+    _googleSignIn.authenticationEvents.listen((event) async {
+        if (event is GoogleSignInAuthenticationEventSignIn) {
+            signInInit(event.user);
+        }
+    });
 
     var credentials = await getCredentials();
     if (credentials != null) {
@@ -38,21 +43,20 @@ class DriveSync {
               credentials["refreshToken"], _scopes));
       Global.authDrive = ga.DriveApi(Global.authClient);
     } else {
-      _googleSignIn.onCurrentUserChanged.listen((GoogleSignInAccount? account) async {
-        if (account != null) {
-          debugPrint('handleGoogleSignIn: onCurrentUserChanged');
-          signInInit(account);
-        }
-      });
-      await _googleSignIn.signInSilently();
+      await _googleSignIn.attemptLightweightAuthentication();
     }
   }
 
-  Future<void> signInInit(GoogleSignInAccount? account) async {
-    // print(account!.email);
-    MyHomePageState.email = account!.email;
+  Future<void> handleSignInSilently() async {
+      await restoreSession();
+  }
+
+  Future<void> signInInit(GoogleSignInAccount account) async {
+    // print(account.email);
+    MyHomePageState.email = account.email;
     await Global.settingsBox.put('userEmail', account.email);
-    Global.authClient = await _googleSignIn.authenticatedClient();
+    var authClient = await account.authorizationClient.authorizeScopes(_scopes);
+    Global.authClient = authClient.authClient(scopes: _scopes);
     Global.authDrive = ga.DriveApi(Global.authClient);
     checkForBackup();
     Global.loggedIn = true;
@@ -61,11 +65,8 @@ class DriveSync {
 
   Future<void> handleSignIn() async {
     try {
-      await _googleSignIn.signIn();
-      if (_googleSignIn.currentUser != null) {
-        // print(_googleSignIn.currentUser!.email);
-        signInInit(_googleSignIn.currentUser);
-      }
+      var account = await _googleSignIn.authenticate(scopeHint: _scopes);
+      signInInit(account);
     } catch (error) {
       print(error); // ignore: avoid_print
     }
@@ -78,6 +79,9 @@ class DriveSync {
 
   refreshTheToken() async {
     var credentials = await Global.settingsBox.get('credentials');
+    if (credentials == null || credentials['refreshToken'] == null) {
+        return;
+    }
     String refreshToken = credentials['refreshToken'];
     var url = Uri.parse('https://accounts.google.com/o/oauth2/token?client_id=$_clientId&refresh_token=$refreshToken&grant_type=refresh_token');
     var response = await http.post(url);
@@ -97,7 +101,7 @@ class DriveSync {
     MyHomePageState.uploadingBackup = true;
     MyHomePageState.backupNotifier.value++;
     print('upload backup');
-    await handleSignInSilently();
+    await restoreSession();
     var encoder = ZipFileEncoder();
     var zipPath = await Global.getDataDirectoryPath() + '/$backupName.zip';
     encoder.create(zipPath);
@@ -199,7 +203,7 @@ class DriveSync {
   restoreBackup(cntxt) async {
     print('restore : ');
 
-    await handleSignInSilently();
+    await restoreSession();
     //check for backup to restore
     try {
       var query = '''mimeType = "application/zip"
