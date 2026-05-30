@@ -39,7 +39,7 @@ void main() async {
     await Global.settingsBox.put('ratePopCounter', 0);
   }
 
-  driveSync.handleSignInSilently();
+  driveSync.restoreSession();
 
   runApp(const MyApp());
 }
