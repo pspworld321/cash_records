@@ -20,13 +20,20 @@ class DriveSync {
 
   var backupName = "cashRecordsBackup";
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: <String>[
-      'https://www.googleapis.com/auth/drive.appdata',
-    ],
-  );
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+  bool _isInitialized = false;
+
+  Future<void> _ensureInitialized() async {
+    if (!_isInitialized) {
+      await _googleSignIn.initialize(
+        clientId: _clientId,
+      );
+      _isInitialized = true;
+    }
+  }
 
   Future<void> handleSignInSilently() async {
+    await _ensureInitialized();
 
     var credentials = await getCredentials();
     if (credentials != null) {
@@ -38,21 +45,34 @@ class DriveSync {
               credentials["refreshToken"], _scopes));
       Global.authDrive = ga.DriveApi(Global.authClient);
     } else {
-      _googleSignIn.onCurrentUserChanged.listen((GoogleSignInAccount? account) async {
+      try {
+        final account = await _googleSignIn.attemptLightweightAuthentication();
         if (account != null) {
-          debugPrint('handleGoogleSignIn: onCurrentUserChanged');
-          signInInit(account);
+          debugPrint('handleGoogleSignIn: attemptLightweightAuthentication success');
+          await signInInit(account);
         }
-      });
-      await _googleSignIn.signInSilently();
+      } catch (e) {
+        print('Error during silent sign-in: $e');
+      }
     }
   }
 
   Future<void> signInInit(GoogleSignInAccount? account) async {
-    // print(account!.email);
-    MyHomePageState.email = account!.email;
+    if (account == null) return;
+
+    MyHomePageState.email = account.email;
     await Global.settingsBox.put('userEmail', account.email);
-    Global.authClient = await _googleSignIn.authenticatedClient();
+
+    // Request authorization for scopes if not already granted.
+    final bool isAuthorized = await _googleSignIn.authorizationClient.authorizationForScopes(_scopes) != null;
+    if (!isAuthorized) {
+      final authz = await _googleSignIn.authorizationClient.authorizeScopes(_scopes);
+      Global.authClient = authz.authClient(scopes: _scopes);
+    } else {
+       final authz = await _googleSignIn.authorizationClient.authorizationForScopes(_scopes);
+       Global.authClient = authz!.authClient(scopes: _scopes);
+    }
+
     Global.authDrive = ga.DriveApi(Global.authClient);
     checkForBackup();
     Global.loggedIn = true;
@@ -60,18 +80,17 @@ class DriveSync {
   }
 
   Future<void> handleSignIn() async {
+    await _ensureInitialized();
     try {
-      await _googleSignIn.signIn();
-      if (_googleSignIn.currentUser != null) {
-        // print(_googleSignIn.currentUser!.email);
-        signInInit(_googleSignIn.currentUser);
-      }
+      final account = await _googleSignIn.authenticate(scopeHint: _scopes);
+      await signInInit(account);
     } catch (error) {
       print(error); // ignore: avoid_print
     }
   }
 
   Future<void> handleSignOut() async {
+    await _ensureInitialized();
     await _googleSignIn.disconnect();
     clearCredentials();
   }
