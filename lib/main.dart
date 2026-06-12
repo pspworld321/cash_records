@@ -27,9 +27,8 @@ void main() async {
   Global.settingsBox = await Hive.openBox('settings');
   Global.brandInfoBox = await Hive.openBox('brandInfoBox');
   // Global.settingsBox.put('dataConverted', null);
-  var driveSync = DriveSync();
-  var cred = await driveSync.getCredentials();
-  if (cred != null) {
+  var userEmail = Global.settingsBox.get('userEmail');
+  if (userEmail != null) {
     Global.loggedIn = true;
   }
   if (Global.settingsBox.get('backupInterval') == null) {
@@ -39,6 +38,7 @@ void main() async {
     await Global.settingsBox.put('ratePopCounter', 0);
   }
 
+  var driveSync = DriveSync();
   driveSync.handleSignInSilently();
 
   runApp(const MyApp());
