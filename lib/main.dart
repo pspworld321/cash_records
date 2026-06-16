@@ -28,8 +28,8 @@ void main() async {
   Global.brandInfoBox = await Hive.openBox('brandInfoBox');
   // Global.settingsBox.put('dataConverted', null);
   var driveSync = DriveSync();
-  var cred = await driveSync.getCredentials();
-  if (cred != null) {
+  var userEmail = await Global.settingsBox.get('userEmail');
+  if (userEmail != null && userEmail != '') {
     Global.loggedIn = true;
   }
   if (Global.settingsBox.get('backupInterval') == null) {
