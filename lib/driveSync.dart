@@ -1,4 +1,4 @@
-import 'dart:convert';
+
 import 'dart:io';
 import 'package:extension_google_sign_in_as_googleapis_auth/extension_google_sign_in_as_googleapis_auth.dart';
 
@@ -6,16 +6,15 @@ import 'package:archive/archive_io.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:googleapis/drive/v3.dart' as ga;
-import 'package:googleapis_auth/auth_io.dart';
+
 import 'package:hive/hive.dart';
-import 'package:http/http.dart' as http;
+
 import 'package:intl/intl.dart';
 
 import 'global.dart';
 import 'main.dart';
 
 class DriveSync {
-  final _clientId = "543807404983-d6c8gh2qpfk10tlf8ucnrl2md8ue7nci.apps.googleusercontent.com";
   final _scopes = ['https://www.googleapis.com/auth/drive.appdata', 'https://www.googleapis.com/auth/userinfo.email'];
 
   var backupName = "cashRecordsBackup";
@@ -27,44 +26,45 @@ class DriveSync {
   );
 
   Future<void> handleSignInSilently() async {
+    _googleSignIn.onCurrentUserChanged.listen((GoogleSignInAccount? account) async {
+      if (account != null) {
+        debugPrint('handleGoogleSignIn: onCurrentUserChanged');
+        signInInit(account);
+      }
+    });
 
-    var credentials = await getCredentials();
-    if (credentials != null) {
-      //Already authenticated
-      await refreshTheToken();
-      Global.authClient = authenticatedClient(
-          http.Client(),
-          AccessCredentials(AccessToken(credentials["type"], credentials['access_token'], DateTime.tryParse(credentials["expiry"])!),
-              credentials["refreshToken"], _scopes));
-      Global.authDrive = ga.DriveApi(Global.authClient);
-    } else {
-      _googleSignIn.onCurrentUserChanged.listen((GoogleSignInAccount? account) async {
-        if (account != null) {
-          debugPrint('handleGoogleSignIn: onCurrentUserChanged');
-          signInInit(account);
-        }
-      });
-      await _googleSignIn.signInSilently();
+    var account = await _googleSignIn.signInSilently();
+    if (account != null) {
+      if (await _googleSignIn.canAccessScopes(_scopes)) {
+        await signInInit(account);
+      }
     }
   }
 
   Future<void> signInInit(GoogleSignInAccount? account) async {
-    // print(account!.email);
-    MyHomePageState.email = account!.email;
+    if (account == null) return;
+    MyHomePageState.email = account.email;
     await Global.settingsBox.put('userEmail', account.email);
     Global.authClient = await _googleSignIn.authenticatedClient();
-    Global.authDrive = ga.DriveApi(Global.authClient);
-    checkForBackup();
-    Global.loggedIn = true;
-    MyHomePageState.backupNotifier.value++;
+    if (Global.authClient != null) {
+      Global.authDrive = ga.DriveApi(Global.authClient!);
+      checkForBackup();
+      Global.loggedIn = true;
+      MyHomePageState.backupNotifier.value++;
+    }
   }
 
   Future<void> handleSignIn() async {
     try {
-      await _googleSignIn.signIn();
-      if (_googleSignIn.currentUser != null) {
-        // print(_googleSignIn.currentUser!.email);
-        signInInit(_googleSignIn.currentUser);
+      var account = await _googleSignIn.signIn();
+      if (account != null) {
+        bool authorized = await _googleSignIn.canAccessScopes(_scopes);
+        if (!authorized) {
+          authorized = await _googleSignIn.requestScopes(_scopes);
+        }
+        if (authorized) {
+          await signInInit(account);
+        }
       }
     } catch (error) {
       print(error); // ignore: avoid_print
@@ -73,24 +73,10 @@ class DriveSync {
 
   Future<void> handleSignOut() async {
     await _googleSignIn.disconnect();
-    clearCredentials();
-  }
-
-  refreshTheToken() async {
-    var credentials = await Global.settingsBox.get('credentials');
-    String refreshToken = credentials['refreshToken'];
-    var url = Uri.parse('https://accounts.google.com/o/oauth2/token?client_id=$_clientId&refresh_token=$refreshToken&grant_type=refresh_token');
-    var response = await http.post(url);
-    Map responseMap = jsonDecode(response.body);
-    //
-    if (responseMap['access_token'] != null) {
-      credentials['time_saved_at'] = DateTime.now().millisecondsSinceEpoch;
-      credentials['access_token'] = responseMap['access_token'];
-      await Global.settingsBox.put('credentials', credentials);
-    } else {
-      //print('error in refreshing token');
-    }
-    return responseMap;
+    await Global.settingsBox.delete('userEmail');
+    await Future.delayed(Duration(milliseconds: 100));
+    Global.loggedIn = false;
+    MyHomePageState.backupNotifier.value++;
   }
 
   uploadBackup() async {
@@ -278,32 +264,6 @@ class DriveSync {
     }
 
     Global.checkingBackup = false;
-    MyHomePageState.backupNotifier.value++;
-  }
-
-  saveCredentials(AccessToken token, String refreshToken) async {
-    await Global.settingsBox.put('credentials', {
-      "type": token.type,
-      'access_token': token.data,
-      "expiry": token.expiry.toString(),
-      "refreshToken": refreshToken,
-      'time_saved_at': DateTime.now().millisecondsSinceEpoch
-    });
-    //browser.close();
-  }
-
-  getCredentials() async {
-    var result = await Global.settingsBox.get('credentials');
-    if (result == null || result.length == 0 || result['refreshToken'] == '' || result['refreshToken'] == null) {
-      return null;
-    }
-    return result;
-  }
-
-  clearCredentials() async {
-    await Global.settingsBox.delete('credentials');
-    await Future.delayed(Duration(milliseconds: 100));
-    Global.loggedIn = false;
     MyHomePageState.backupNotifier.value++;
   }
 
