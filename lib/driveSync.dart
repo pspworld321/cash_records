@@ -27,44 +27,55 @@ class DriveSync {
   );
 
   Future<void> handleSignInSilently() async {
+    _googleSignIn.onCurrentUserChanged.listen((GoogleSignInAccount? account) async {
+      if (account != null) {
+        debugPrint('handleGoogleSignIn: onCurrentUserChanged');
+        signInInit(account);
+      }
+    });
 
-    var credentials = await getCredentials();
-    if (credentials != null) {
-      //Already authenticated
-      await refreshTheToken();
-      Global.authClient = authenticatedClient(
-          http.Client(),
-          AccessCredentials(AccessToken(credentials["type"], credentials['access_token'], DateTime.tryParse(credentials["expiry"])!),
-              credentials["refreshToken"], _scopes));
-      Global.authDrive = ga.DriveApi(Global.authClient);
-    } else {
-      _googleSignIn.onCurrentUserChanged.listen((GoogleSignInAccount? account) async {
-        if (account != null) {
-          debugPrint('handleGoogleSignIn: onCurrentUserChanged');
-          signInInit(account);
-        }
-      });
+    try {
       await _googleSignIn.signInSilently();
+    } catch (error) {
+      print('Error during signInSilently: $error');
     }
   }
 
   Future<void> signInInit(GoogleSignInAccount? account) async {
-    // print(account!.email);
-    MyHomePageState.email = account!.email;
-    await Global.settingsBox.put('userEmail', account.email);
-    Global.authClient = await _googleSignIn.authenticatedClient();
-    Global.authDrive = ga.DriveApi(Global.authClient);
-    checkForBackup();
-    Global.loggedIn = true;
-    MyHomePageState.backupNotifier.value++;
+    if (account == null) return;
+
+    // Check scopes before requesting client to prevent UI prompts
+    bool isAuthorized = await _googleSignIn.canAccessScopes(_scopes);
+
+    if (isAuthorized) {
+      MyHomePageState.email = account.email;
+      await Global.settingsBox.put('userEmail', account.email);
+      final authClient = await _googleSignIn.authenticatedClient();
+      if (authClient != null) {
+        Global.authClient = authClient;
+        Global.authDrive = ga.DriveApi(Global.authClient);
+        checkForBackup();
+        Global.loggedIn = true;
+        MyHomePageState.backupNotifier.value++;
+      } else {
+        print('Error: Failed to obtain authenticated client.');
+      }
+    } else {
+       print('Error: User did not grant necessary scopes.');
+    }
   }
 
   Future<void> handleSignIn() async {
     try {
-      await _googleSignIn.signIn();
-      if (_googleSignIn.currentUser != null) {
-        // print(_googleSignIn.currentUser!.email);
-        signInInit(_googleSignIn.currentUser);
+      final account = await _googleSignIn.signIn();
+      if (account != null) {
+        bool isAuthorized = await _googleSignIn.canAccessScopes(_scopes);
+        if (!isAuthorized) {
+          isAuthorized = await _googleSignIn.requestScopes(_scopes);
+        }
+        if (isAuthorized) {
+          signInInit(account);
+        }
       }
     } catch (error) {
       print(error); // ignore: avoid_print
@@ -73,24 +84,9 @@ class DriveSync {
 
   Future<void> handleSignOut() async {
     await _googleSignIn.disconnect();
-    clearCredentials();
-  }
-
-  refreshTheToken() async {
-    var credentials = await Global.settingsBox.get('credentials');
-    String refreshToken = credentials['refreshToken'];
-    var url = Uri.parse('https://accounts.google.com/o/oauth2/token?client_id=$_clientId&refresh_token=$refreshToken&grant_type=refresh_token');
-    var response = await http.post(url);
-    Map responseMap = jsonDecode(response.body);
-    //
-    if (responseMap['access_token'] != null) {
-      credentials['time_saved_at'] = DateTime.now().millisecondsSinceEpoch;
-      credentials['access_token'] = responseMap['access_token'];
-      await Global.settingsBox.put('credentials', credentials);
-    } else {
-      //print('error in refreshing token');
-    }
-    return responseMap;
+    await Future.delayed(Duration(milliseconds: 100));
+    Global.loggedIn = false;
+    MyHomePageState.backupNotifier.value++;
   }
 
   uploadBackup() async {
@@ -278,32 +274,6 @@ class DriveSync {
     }
 
     Global.checkingBackup = false;
-    MyHomePageState.backupNotifier.value++;
-  }
-
-  saveCredentials(AccessToken token, String refreshToken) async {
-    await Global.settingsBox.put('credentials', {
-      "type": token.type,
-      'access_token': token.data,
-      "expiry": token.expiry.toString(),
-      "refreshToken": refreshToken,
-      'time_saved_at': DateTime.now().millisecondsSinceEpoch
-    });
-    //browser.close();
-  }
-
-  getCredentials() async {
-    var result = await Global.settingsBox.get('credentials');
-    if (result == null || result.length == 0 || result['refreshToken'] == '' || result['refreshToken'] == null) {
-      return null;
-    }
-    return result;
-  }
-
-  clearCredentials() async {
-    await Global.settingsBox.delete('credentials');
-    await Future.delayed(Duration(milliseconds: 100));
-    Global.loggedIn = false;
     MyHomePageState.backupNotifier.value++;
   }
 
