@@ -27,43 +27,43 @@ class DriveSync {
   );
 
   Future<void> handleSignInSilently() async {
-
-    var credentials = await getCredentials();
-    if (credentials != null) {
-      //Already authenticated
-      await refreshTheToken();
-      Global.authClient = authenticatedClient(
-          http.Client(),
-          AccessCredentials(AccessToken(credentials["type"], credentials['access_token'], DateTime.tryParse(credentials["expiry"])!),
-              credentials["refreshToken"], _scopes));
-      Global.authDrive = ga.DriveApi(Global.authClient);
-    } else {
-      _googleSignIn.onCurrentUserChanged.listen((GoogleSignInAccount? account) async {
-        if (account != null) {
-          debugPrint('handleGoogleSignIn: onCurrentUserChanged');
-          signInInit(account);
-        }
-      });
-      await _googleSignIn.signInSilently();
-    }
+    _googleSignIn.onCurrentUserChanged.listen((GoogleSignInAccount? account) async {
+      if (account != null) {
+        debugPrint('handleGoogleSignIn: onCurrentUserChanged');
+        signInInit(account);
+      }
+    });
+    await _googleSignIn.signInSilently();
   }
 
   Future<void> signInInit(GoogleSignInAccount? account) async {
-    // print(account!.email);
     MyHomePageState.email = account!.email;
     await Global.settingsBox.put('userEmail', account.email);
+
+    // Check if the required scopes are granted, if not request them
+    final bool isAuthorized = account != null && await _googleSignIn.canAccessScopes(_scopes);
+    if (!isAuthorized) {
+      final bool isAuthorizedWithNewScopes = await _googleSignIn.requestScopes(_scopes);
+      if (!isAuthorizedWithNewScopes) {
+        // Scopes not granted, handle appropriately
+        print('User declined to grant requested scopes');
+        return;
+      }
+    }
+
     Global.authClient = await _googleSignIn.authenticatedClient();
-    Global.authDrive = ga.DriveApi(Global.authClient);
-    checkForBackup();
-    Global.loggedIn = true;
-    MyHomePageState.backupNotifier.value++;
+    if (Global.authClient != null) {
+      Global.authDrive = ga.DriveApi(Global.authClient!);
+      checkForBackup();
+      Global.loggedIn = true;
+      MyHomePageState.backupNotifier.value++;
+    }
   }
 
   Future<void> handleSignIn() async {
     try {
       await _googleSignIn.signIn();
       if (_googleSignIn.currentUser != null) {
-        // print(_googleSignIn.currentUser!.email);
         signInInit(_googleSignIn.currentUser);
       }
     } catch (error) {
@@ -74,23 +74,6 @@ class DriveSync {
   Future<void> handleSignOut() async {
     await _googleSignIn.disconnect();
     clearCredentials();
-  }
-
-  refreshTheToken() async {
-    var credentials = await Global.settingsBox.get('credentials');
-    String refreshToken = credentials['refreshToken'];
-    var url = Uri.parse('https://accounts.google.com/o/oauth2/token?client_id=$_clientId&refresh_token=$refreshToken&grant_type=refresh_token');
-    var response = await http.post(url);
-    Map responseMap = jsonDecode(response.body);
-    //
-    if (responseMap['access_token'] != null) {
-      credentials['time_saved_at'] = DateTime.now().millisecondsSinceEpoch;
-      credentials['access_token'] = responseMap['access_token'];
-      await Global.settingsBox.put('credentials', credentials);
-    } else {
-      //print('error in refreshing token');
-    }
-    return responseMap;
   }
 
   uploadBackup() async {
@@ -281,27 +264,8 @@ class DriveSync {
     MyHomePageState.backupNotifier.value++;
   }
 
-  saveCredentials(AccessToken token, String refreshToken) async {
-    await Global.settingsBox.put('credentials', {
-      "type": token.type,
-      'access_token': token.data,
-      "expiry": token.expiry.toString(),
-      "refreshToken": refreshToken,
-      'time_saved_at': DateTime.now().millisecondsSinceEpoch
-    });
-    //browser.close();
-  }
-
-  getCredentials() async {
-    var result = await Global.settingsBox.get('credentials');
-    if (result == null || result.length == 0 || result['refreshToken'] == '' || result['refreshToken'] == null) {
-      return null;
-    }
-    return result;
-  }
-
   clearCredentials() async {
-    await Global.settingsBox.delete('credentials');
+    await Global.settingsBox.delete('userEmail');
     await Future.delayed(Duration(milliseconds: 100));
     Global.loggedIn = false;
     MyHomePageState.backupNotifier.value++;
