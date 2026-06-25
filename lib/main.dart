@@ -28,7 +28,7 @@ void main() async {
   Global.brandInfoBox = await Hive.openBox('brandInfoBox');
   // Global.settingsBox.put('dataConverted', null);
   var driveSync = DriveSync();
-  var cred = await driveSync.getCredentials();
+  var cred = await Global.settingsBox.get('userEmail');
   if (cred != null) {
     Global.loggedIn = true;
   }
