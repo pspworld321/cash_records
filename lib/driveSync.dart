@@ -41,10 +41,7 @@ class DriveSync {
   }
 
   Future<void> signInInit(GoogleSignInAccount account) async {
-    bool isAuthorized = account.serverAuthCode != null;
-    if (!isAuthorized) {
-      isAuthorized = await _googleSignIn.canAccessScopes(_scopes);
-    }
+    bool isAuthorized = await _googleSignIn.canAccessScopes(_scopes);
 
     if (!isAuthorized) {
       debugPrint('User not authorized for scopes, skipping drive API init during silent sign in.');
@@ -64,10 +61,7 @@ class DriveSync {
     try {
       final account = await _googleSignIn.signIn();
       if (account != null) {
-        bool isAuthorized = account.serverAuthCode != null;
-        if (!isAuthorized) {
-          isAuthorized = await _googleSignIn.canAccessScopes(_scopes);
-        }
+        bool isAuthorized = await _googleSignIn.canAccessScopes(_scopes);
 
         if (!isAuthorized) {
           isAuthorized = await _googleSignIn.requestScopes(_scopes);
