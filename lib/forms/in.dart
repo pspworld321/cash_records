@@ -88,26 +88,27 @@ class InForm extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Tooltip(
-                          message: 'Show Calender',
-                          child: Padding(
-                              padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
-                              child: GestureDetector(
-                                  child: Icon(
-                                    Icons.date_range_sharp,
-                                    size: 40,
-                                  ),
-                                  onTap: () async {
-                                    DateTime date = DateTime(1900);
+                      Padding(
+                          padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
+                          child: IconButton(
+                              tooltip: 'Show Calendar',
+                              icon: const Icon(Icons.date_range_sharp),
+                              iconSize: 40,
+                              onPressed: () async {
+                                DateTime date = DateTime(1900);
 
-                                    date = (await showDatePicker(
-                                        context: formContext,
-                                        initialDate: DateTime.now(),
-                                        firstDate: DateTime(2000),
-                                        lastDate: DateTime(DateTime.now().year + 1)))!;
+                                date = (await showDatePicker(
+                                    context: formContext,
+                                    initialDate: DateTime.now(),
+                                    firstDate: DateTime(2000),
+                                    lastDate: DateTime(DateTime.now().year + 1)))!;
 
-                                    dateFormController.text = date.day.toString() + '/' + date.month.toString() + '/' + date.year.toString();
-                                  })))
+                                dateFormController.text = date.day.toString() +
+                                    '/' +
+                                    date.month.toString() +
+                                    '/' +
+                                    date.year.toString();
+                              }))
                     ],
                   ),
                   TypeAheadFormField(
