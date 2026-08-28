@@ -92,27 +92,23 @@ class OutForm extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Tooltip(
-                        message: 'Show Calender',
-                        child: Padding(
-                          padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
-                          child: GestureDetector(
-                              child: Icon(
-                                Icons.date_range_sharp,
-                                size: 40,
-                              ),
-                              onTap: () async {
-                                DateTime? date = DateTime(1900);
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(10, 0, 0, 0),
+                        child: IconButton(
+                            icon: Icon(Icons.date_range_sharp),
+                            iconSize: 40,
+                            tooltip: 'Show Calendar',
+                            onPressed: () async {
+                              DateTime? date = DateTime(1900);
 
-                                date = await showDatePicker(
-                                    context: formContext,
-                                    initialDate: DateTime.now(),
-                                    firstDate: DateTime(2000),
-                                    lastDate: DateTime(DateTime.now().year + 1));
+                              date = await showDatePicker(
+                                  context: formContext,
+                                  initialDate: DateTime.now(),
+                                  firstDate: DateTime(2000),
+                                  lastDate: DateTime(DateTime.now().year + 1));
 
-                                dateFormController.text = date!.day.toString() + '/' + date.month.toString() + '/' + date.year.toString();
-                              }),
-                        ),
+                              dateFormController.text = date!.day.toString() + '/' + date.month.toString() + '/' + date.year.toString();
+                            }),
                       )
                     ],
                   ),
@@ -190,19 +186,16 @@ class OutForm extends StatelessWidget {
                                         children: [
                                           Text(attch['name']),
                                           Spacer(),
-                                          MouseRegion(
-                                              cursor: SystemMouseCursors.click,
-                                              child: Tooltip(
-                                                message: 'Remove',
-                                                child: GestureDetector(
-                                                    onTap: () {
-                                                      attachmentsMapsList.remove(attch);
-                                                      numberAttachList.value++;
-                                                    },
-                                                    child: Padding(
-                                                        padding: EdgeInsets.fromLTRB(5, 3, 5, 0),
-                                                        child: Icon(Icons.delete, size: 18, color: Colors.blue))),
-                                              ))
+                                          IconButton(
+                                              icon: Icon(Icons.delete, color: Colors.blue),
+                                              iconSize: 18,
+                                              tooltip: 'Remove',
+                                              padding: EdgeInsets.fromLTRB(5, 3, 5, 0),
+                                              constraints: BoxConstraints(),
+                                              onPressed: () {
+                                                attachmentsMapsList.remove(attch);
+                                                numberAttachList.value++;
+                                              })
                                         ],
                                       ),
                                     ),
